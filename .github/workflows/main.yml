@@ -1,0 +1,31 @@
+name: Auto Build CI  # 动作的名字，显示在网页上
+
+# ----------------------------
+# 这里是核心配置：触发条件 (Trigger)
+# ----------------------------
+on:
+  push:
+    branches: [ "main" ]  # 当 main 分支发生 push 时触发
+  pull_request:
+    branches: [ "main" ]  # 当有人提 Pull Request 到 main 时触发
+  workflow_dispatch:      # 允许你在网页上有一个按钮，手动点击触发 (调试神器)
+
+# ----------------------------
+# 这里是具体要干的活 (Jobs)
+# ----------------------------
+jobs:
+  build-job:
+    runs-on: ubuntu-latest  # 借用 GitHub 的 Ubuntu 电脑运行
+
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v4  # 这是官方插件，把你的代码下载到虚拟电脑里
+
+      - name: 2. 输出一句话 (这里换成你的构建命令)
+        run: echo "触发成功！开始构建..."
+      
+      # 如果你是前端项目 (Vue/React)，通常是下面这样：
+      # - name: 安装依赖
+      #   run: npm install
+      # - name: 打包构建
+      #   run: npm run build
