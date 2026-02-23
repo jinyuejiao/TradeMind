@@ -76,6 +76,7 @@
             transition: height 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
             background: linear-gradient(180deg, #14B8A6 0%, #0D9488 100%);
         }
+
         .chart-container-svg {
             width: 180px;
             height: 180px;
@@ -953,234 +954,235 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- ================= [4] 所有弹窗模块 (核心修复点：确保在页面底部) ================= -->
-                <!-- AI 预测报告弹窗 (经营分析) -->
-                <div id="ai-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8">
-                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAIAnalysis()"></div>
-                    <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all transform translate-y-4 fade-in">
-                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h2 class="text-sm font-bold text-slate-800 tracking-widest flex items-center uppercase italic"><i class="ph ph-file-text text-brand-600 mr-2 text-xl font-bold"></i> Business Decision Document</h2>
-                            <button onclick="closeAIAnalysis()" class="p-2 hover:bg-slate-200 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+            <!-- ================= [4] 所有弹窗模块 (核心修复点：确保在页面底部) ================= -->
+            <!-- AI 预测报告弹窗 (经营分析) -->
+            <div id="ai-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAIAnalysis()"></div>
+                <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all transform translate-y-4 fade-in">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h2 class="text-sm font-bold text-slate-800 tracking-widest flex items-center uppercase italic"><i class="ph ph-file-text text-brand-600 mr-2 text-xl font-bold"></i> Business Decision Document</h2>
+                        <button onclick="closeAIAnalysis()" class="p-2 hover:bg-slate-200 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-10 space-y-12 no-scrollbar">
+                        <div class="text-center border-b border-slate-100 pb-10"><h1 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">经营竞争力分析与未来增长预测</h1><p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Report ID: TM-2026-X | LLM Engine v2.4</p></div>
+                        <section><h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 历史经营回顾</h3><p class="text-sm text-slate-500 leading-relaxed indent-8">回顾过去12个月，主推产品在欧美市场利润率上升12%。</p></section>
+                        <section><h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 2026 Q1 产品预测</h3><div class="bg-slate-900 text-white p-8 rounded-2xl shadow-xl relative overflow-hidden"><div class="absolute -right-8 -top-8 opacity-10"><i class="ph ph-rocket-launch text-8xl"></i></div><p class="text-sm font-medium leading-relaxed">建议提前锁定 1,500 套核心芯片。预测 2 月份“光伏灯具”需求将出现 40% 的爆发式增长。</p></div></section>
+                    </div>
+                    <div class="p-5 border-t border-slate-100 bg-white flex gap-4"><button onclick="closeAIAnalysis()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-400">关闭</button><button class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg flex items-center justify-center gap-2"><i class="ph ph-download"></i> 导出 PDF</button></div>
+                </div>
+            </div>
+
+            <!-- 产研中心：产品选择弹窗 -->
+            <div id="product-select-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeProductSelectModal()"></div>
+                <div class="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden fade-in">
+                    <div class="px-6 py-5 border-b border-slate-100 font-bold text-slate-800 flex justify-between items-center bg-slate-50/50"><span>选择研讨目标产品</span><i class="ph ph-x cursor-pointer text-slate-400" onclick="closeProductSelectModal()"></i></div>
+                    <div class="p-6 space-y-3">
+                        <button onclick="requestNewProductAnalysis('经典金色镂空户外灯')" class="w-full p-4 border border-slate-100 rounded-2xl hover:border-brand-500 hover:bg-brand-50 transition-all text-left flex justify-between items-center group"><div class="flex items-center gap-3"><i class="ph ph-lightbulb text-brand-500 text-xl font-bold"></i><span class="text-sm font-bold text-slate-700">经典金色镂空户外灯</span></div><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500"></i></button>
+                        <button onclick="requestNewProductAnalysis('多功能露营折叠桌')" class="w-full p-4 border border-slate-100 rounded-2xl hover:border-brand-500 hover:bg-brand-50 transition-all text-left flex justify-between items-center group"><div class="flex items-center gap-3"><i class="ph ph-layout text-brand-500 text-xl font-bold"></i><span class="text-sm font-bold text-slate-700">多功能露营折叠桌</span></div><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500"></i></button>
+                    </div>
+                    <div class="p-4 border-t border-slate-50 bg-slate-50/50 text-center"><p class="text-[10px] text-slate-400">选择后 AI 将根据该类目历史数据自动生成新品研讨报告</p></div>
+                </div>
+            </div>
+
+            <!-- 产研中心：新品预测报告弹窗 -->
+            <div id="new-product-report-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 md:p-8">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeNewProductReport()"></div>
+                <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h2 class="text-sm font-bold text-slate-800 tracking-widest flex items-center uppercase italic"><i class="ph ph-sparkle text-brand-600 mr-2 text-xl font-bold"></i> AI 新品研讨预测报告</h2>
+                        <button onclick="closeNewProductReport()" class="p-2 hover:bg-slate-200 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-10 md:p-12 space-y-12 no-scrollbar">
+                        <div class="text-center border-b border-slate-100 pb-10"><h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-3 tracking-tight" id="analysisTargetName">研讨目标：经典金色灯具</h1><p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase tracking-tighter">产研分析 ID: AI-RD-2026-01 | 实时数据接入</p></div>
+                        <section>
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 市场机遇与近期热点</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="p-5 bg-slate-50 rounded-2xl border border-slate-100"><p class="text-xs font-bold text-slate-700 mb-2">区域风俗关联度</p><p class="text-[11px] text-slate-500 leading-relaxed italic">当前中东市场备货窗口开启，新品对“家庭团聚氛围”的溢价点击率上涨 24%。</p></div><div class="p-5 bg-slate-50 rounded-2xl border border-slate-100"><p class="text-xs font-bold text-slate-700 mb-2">近期热点事件驱动</p><p class="text-[11px] text-slate-500 leading-relaxed italic">全球露营热潮回归，具备“大容量储能”与“环保材质”标签的产品点击率远超行业均值。</p></div></div>
+                        </section>
+                        <section>
+                            <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 产研核心指标预测</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400 uppercase font-bold">预测成本</p><p class="text-xl font-mono font-bold text-slate-900">$12.50</p></div>
+                                <div class="p-4 bg-brand-50 rounded-xl border border-brand-200"><p class="text-[10px] text-brand-600 uppercase font-bold">建议售价</p><p class="text-xl font-mono font-bold text-brand-600">$48.00</p></div>
+                                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400 uppercase font-bold">首批预测量</p><p class="text-xl font-mono font-bold text-slate-900">2,500+</p></div>
+                                <div class="p-4 bg-brand-50 rounded-xl border border-brand-200"><p class="text-[10px] text-brand-600 uppercase font-bold">营收潜力</p><p class="text-xl font-mono font-bold text-brand-600">$120k</p></div>
+                            </div>
+                        </section>
+                        <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden"><div class="absolute -right-8 -top-8 opacity-10"><i class="ph ph-trend-up text-8xl"></i></div><p class="text-xs font-bold text-brand-400 mb-3 uppercase tracking-widest tracking-widest">AI 爆品判定建议</p><p class="text-sm font-medium leading-relaxed">基于以往该品类 85% 的动销率及近期供应链成本下行，判定为<span class="text-brand-400 font-bold uppercase underline decoration-brand-500 underline-offset-4">高确定性新品</span>。建议立即进入打样阶段，并提前锁定 1,500 套核心芯片。</p></div>
+                    </div>
+                    <div class="p-5 border-t border-slate-100 bg-white flex gap-4"><button onclick="closeNewProductReport()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-400 hover:bg-slate-50 transition">取消</button><button class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2"><i class="ph ph-check-circle text-lg"></i> 下达产研指令</button></div>
+                </div>
+            </div>
+
+            <!-- [沉浸式弹窗] 产品详情编辑 (核心配置) -->
+            <div id="product-detail-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeProductDetail()"></div>
+                <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
+                    <!-- 弹窗页眉 -->
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph ph-pencil-line text-xl"></i></div>
+                            <div><h2 class="text-sm font-black text-slate-800" id="detail-title">产品详情编辑</h2><p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5" id="detail-sku">SKU: ---</p></div>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-10 space-y-12 no-scrollbar">
-                            <div class="text-center border-b border-slate-100 pb-10"><h1 class="text-2xl font-bold text-slate-900 mb-3 tracking-tight">经营竞争力分析与未来增长预测</h1><p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Report ID: TM-2026-X | LLM Engine v2.4</p></div>
-                            <section><h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 历史经营回顾</h3><p class="text-sm text-slate-500 leading-relaxed indent-8">回顾过去12个月，主推产品在欧美市场利润率上升12%。</p></section>
-                            <section><h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 2026 Q1 产品预测</h3><div class="bg-slate-900 text-white p-8 rounded-2xl shadow-xl relative overflow-hidden"><div class="absolute -right-8 -top-8 opacity-10"><i class="ph ph-rocket-launch text-8xl"></i></div><p class="text-sm font-medium leading-relaxed">建议提前锁定 1,500 套核心芯片。预测 2 月份“光伏灯具”需求将出现 40% 的爆发式增长。</p></div></section>
+                        <button onclick="closeProductDetail()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                    </div>
+
+                    <!-- 详情内容区 -->
+                    <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-8">
+                        <!-- 1. 核心经营信息 -->
+                        <section>
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph ph-identification-card text-brand-500 text-lg"></i> 核心经营信息</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品全称</label><input type="text" value="东北大板 (原味经典)" class="form-input"></div>
+                                <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">SKU 编码</label><input type="text" value="DB-ICE-001" class="form-input font-mono"></div>
+                                <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预设销售价 (USD)</label><input type="number" value="1.50" class="form-input font-mono font-bold text-brand-600"></div>
+
+                                <!-- 单位角色配置组 -->
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">基本单位 (结算底数)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" value="根" class="form-input flex-1" placeholder="如：根">
+                                        <button onclick="openUnitModal()" class="px-3 bg-brand-50 text-brand-600 rounded-xl text-[10px] font-bold border border-brand-100 hover:bg-brand-100 transition-colors whitespace-nowrap">配置单位换算</button>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">默认入库单位 (采购)</label>
+                                    <select class="form-input font-bold"><option>箱 (1箱=200根)</option><option>包 (1包=10根)</option><option>根 (基本单位)</option></select>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">默认销售单位 (出库)</label>
+                                    <select class="form-input font-bold text-brand-600"><option>包 (1包=10根)</option><option>根 (基本单位)</option><option>箱 (1箱=200根)</option></select>
+                                </div>
+
+                                <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">当前库存总量 (基本单位)</label><input type="number" value="1200" class="form-input font-mono"></div>
+
+                                <div class="space-y-2 col-span-full">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">关联主供应商</label>
+                                    <select class="form-input font-bold text-slate-700">
+                                        <option>哈尔滨红运冷链贸易中心 (Rating: A)</option>
+                                        <option>大连大发制冷厂</option>
+                                        <option>广东恒温物流服务公司</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 2. 高级隐藏项 (抽屉式) -->
+                        <section class="pt-6 border-t border-slate-50">
+                            <button onclick="toggleAdvanced()" class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-brand-600 transition-colors group">
+                                <span>展开高级配置与描述信息</span><i id="advanced-icon" class="ph ph-caret-down group-hover:translate-y-0.5 transition-transform"></i>
+                            </button>
+                            <div id="advanced-drawer" class="advanced-drawer">
+                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预警库存下限</label><input type="number" value="100" class="form-input border-red-100"></div>
+                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">主销区域</label><input type="text" value="华北/华东" class="form-input"></div>
+                                    <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品详细描述</label><textarea class="form-input h-24 no-scrollbar">经典原味，特级奶油，-18度冷链保存。2026 年新包装版。</textarea></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- 弹窗底部操作区 -->
+                    <div class="p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                        <p class="text-[10px] text-slate-400 italic">保存后将自动更新单据提取与库存算力逻辑</p>
+                        <div class="flex gap-3 w-full md:w-auto">
+                            <button onclick="closeProductDetail()" class="flex-1 md:flex-none px-8 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">取消返回</button>
+                            <button onclick="saveProduct()" class="flex-[2] md:flex-none px-12 py-3 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition active:scale-95 flex items-center justify-center gap-2">
+                                <i class="ph ph-floppy-disk-back"></i> 保存修改内容
+                            </button>
                         </div>
-                        <div class="p-5 border-t border-slate-100 bg-white flex gap-4"><button onclick="closeAIAnalysis()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-400">关闭</button><button class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg flex items-center justify-center gap-2"><i class="ph ph-download"></i> 导出 PDF</button></div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 产研中心：产品选择弹窗 -->
-                <div id="product-select-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeProductSelectModal()"></div>
-                    <div class="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden fade-in">
-                        <div class="px-6 py-5 border-b border-slate-100 font-bold text-slate-800 flex justify-between items-center bg-slate-50/50"><span>选择研讨目标产品</span><i class="ph ph-x cursor-pointer text-slate-400" onclick="closeProductSelectModal()"></i></div>
-                        <div class="p-6 space-y-3">
-                            <button onclick="requestNewProductAnalysis('经典金色镂空户外灯')" class="w-full p-4 border border-slate-100 rounded-2xl hover:border-brand-500 hover:bg-brand-50 transition-all text-left flex justify-between items-center group"><div class="flex items-center gap-3"><i class="ph ph-lightbulb text-brand-500 text-xl font-bold"></i><span class="text-sm font-bold text-slate-700">经典金色镂空户外灯</span></div><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500"></i></button>
-                            <button onclick="requestNewProductAnalysis('多功能露营折叠桌')" class="w-full p-4 border border-slate-100 rounded-2xl hover:border-brand-500 hover:bg-brand-50 transition-all text-left flex justify-between items-center group"><div class="flex items-center gap-3"><i class="ph ph-layout text-brand-500 text-xl font-bold"></i><span class="text-sm font-bold text-slate-700">多功能露营折叠桌</span></div><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500"></i></button>
+            <!-- [二级弹窗] 单位换算配置 -->
+            <div id="unit-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeUnitModal()"></div>
+                <div class="relative bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl fade-in text-left">
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph ph-scales text-brand-500"></i> 单位换算配置</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">包装单位</label><input type="text" value="箱" class="form-input text-center font-bold"></div>
+                            <div class="pt-4 text-slate-300">=</div>
+                            <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">折合基本数</label><input type="number" value="200" class="form-input text-center text-brand-600 font-black"></div>
+                            <div class="pt-4 text-xs font-bold text-slate-400">根</div>
                         </div>
-                        <div class="p-4 border-t border-slate-50 bg-slate-50/50 text-center"><p class="text-[10px] text-slate-400">选择后 AI 将根据该类目历史数据自动生成新品研讨报告</p></div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1"><input type="text" value="包" class="form-input text-center font-bold"></div>
+                            <div class="pt-1 text-slate-300">=</div>
+                            <div class="flex-1"><input type="number" value="10" class="form-input text-center text-brand-600 font-black"></div>
+                            <div class="pt-1 text-xs font-bold text-slate-400">根</div>
+                        </div>
                     </div>
+                    <button onclick="closeUnitModal()" class="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-bold shadow-lg active:scale-95">保存换算规则</button>
                 </div>
+            </div>
 
-                <!-- 产研中心：新品预测报告弹窗 -->
-                <div id="new-product-report-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 md:p-8">
-                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeNewProductReport()"></div>
-                    <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in">
-                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h2 class="text-sm font-bold text-slate-800 tracking-widest flex items-center uppercase italic"><i class="ph ph-sparkle text-brand-600 mr-2 text-xl font-bold"></i> AI 新品研讨预测报告</h2>
-                            <button onclick="closeNewProductReport()" class="p-2 hover:bg-slate-200 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto p-10 md:p-12 space-y-12 no-scrollbar">
-                            <div class="text-center border-b border-slate-100 pb-10"><h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-3 tracking-tight" id="analysisTargetName">研讨目标：经典金色灯具</h1><p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase tracking-tighter">产研分析 ID: AI-RD-2026-01 | 实时数据接入</p></div>
-                            <section>
-                                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 市场机遇与近期热点</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="p-5 bg-slate-50 rounded-2xl border border-slate-100"><p class="text-xs font-bold text-slate-700 mb-2">区域风俗关联度</p><p class="text-[11px] text-slate-500 leading-relaxed italic">当前中东市场备货窗口开启，新品对“家庭团聚氛围”的溢价点击率上涨 24%。</p></div><div class="p-5 bg-slate-50 rounded-2xl border border-slate-100"><p class="text-xs font-bold text-slate-700 mb-2">近期热点事件驱动</p><p class="text-[11px] text-slate-500 leading-relaxed italic">全球露营热潮回归，具备“大容量储能”与“环保材质”标签的产品点击率远超行业均值。</p></div></div>
-                            </section>
-                            <section>
-                                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-5 bg-brand-500 rounded-full"></span> 产研核心指标预测</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400 uppercase font-bold">预测成本</p><p class="text-xl font-mono font-bold text-slate-900">$12.50</p></div>
-                                    <div class="p-4 bg-brand-50 rounded-xl border border-brand-200"><p class="text-[10px] text-brand-600 uppercase font-bold">建议售价</p><p class="text-xl font-mono font-bold text-brand-600">$48.00</p></div>
-                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><p class="text-[10px] text-slate-400 uppercase font-bold">首批预测量</p><p class="text-xl font-mono font-bold text-slate-900">2,500+</p></div>
-                                    <div class="p-4 bg-brand-50 rounded-xl border border-brand-200"><p class="text-[10px] text-brand-600 uppercase font-bold">营收潜力</p><p class="text-xl font-mono font-bold text-brand-600">$120k</p></div>
-                                </div>
-                            </section>
-                            <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden"><div class="absolute -right-8 -top-8 opacity-10"><i class="ph ph-trend-up text-8xl"></i></div><p class="text-xs font-bold text-brand-400 mb-3 uppercase tracking-widest tracking-widest">AI 爆品判定建议</p><p class="text-sm font-medium leading-relaxed">基于以往该品类 85% 的动销率及近期供应链成本下行，判定为<span class="text-brand-400 font-bold uppercase underline decoration-brand-500 underline-offset-4">高确定性新品</span>。建议立即进入打样阶段，并提前锁定 1,500 套核心芯片。</p></div>
-                        </div>
-                        <div class="p-5 border-t border-slate-100 bg-white flex gap-4"><button onclick="closeNewProductReport()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-400 hover:bg-slate-50 transition">取消</button><button class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2"><i class="ph ph-check-circle text-lg"></i> 下达产研指令</button></div>
-                    </div>
-                </div>
+            <!-- ================= [5] 供应商管理 SUPPLIER ================= -->
+            <div id="view-supplier" class="view-section hidden w-full p-4 md:p-8 space-y-4 md:space-y-0 fade-in">
+                <!-- 恢复 lg:grid-cols-3 布局：左侧地图，右侧评分卡 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
 
-                <!-- [沉浸式弹窗] 产品详情编辑 (核心配置) -->
-                <div id="product-detail-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8">
-                    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeProductDetail()"></div>
-                    <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
-                        <!-- 弹窗页眉 -->
-                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph ph-pencil-line text-xl"></i></div>
-                                <div><h2 class="text-sm font-black text-slate-800" id="detail-title">产品详情编辑</h2><p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5" id="detail-sku">SKU: ---</p></div>
+                    <!-- Left: Map (Span 2) -->
+                    <div class="lg:col-span-2 bg-white rounded border border-slate-200 shadow-sm flex flex-col h-[500px] lg:h-auto">
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">供应商风险地图</h3>
+                            <div class="flex items-center space-x-2 text-[10px]">
+                                <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span> 低风险</span>
+                                <span class="flex items-center"><span class="w-2 h-2 bg-red-500 rounded-full mr-1"></span> 高风险</span>
                             </div>
-                            <button onclick="closeProductDetail()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
                         </div>
+                        <div class="flex-1 bg-slate-50 relative flex items-center justify-center overflow-hidden">
+                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#94a3b8 1px, transparent 1px); background-size: 20px 20px;"></div>
+                            <i class="ph ph-globe-hemisphere-east text-8xl text-slate-300"></i>
 
-                        <!-- 详情内容区 -->
-                        <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-8">
-                            <!-- 1. 核心经营信息 -->
-                            <section>
-                                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph ph-identification-card text-brand-500 text-lg"></i> 核心经营信息</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品全称</label><input type="text" value="东北大板 (原味经典)" class="form-input"></div>
-                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">SKU 编码</label><input type="text" value="DB-ICE-001" class="form-input font-mono"></div>
-                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预设销售价 (USD)</label><input type="number" value="1.50" class="form-input font-mono font-bold text-brand-600"></div>
-
-                                    <!-- 单位角色配置组 -->
-                                    <div class="space-y-2">
-                                        <label class="text-[11px] font-bold text-slate-500 ml-1">基本单位 (结算底数)</label>
-                                        <div class="flex gap-2">
-                                            <input type="text" value="根" class="form-input flex-1" placeholder="如：根">
-                                            <button onclick="openUnitModal()" class="px-3 bg-brand-50 text-brand-600 rounded-xl text-[10px] font-bold border border-brand-100 hover:bg-brand-100 transition-colors whitespace-nowrap">配置单位换算</button>
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label class="text-[11px] font-bold text-slate-500 ml-1">默认入库单位 (采购)</label>
-                                        <select class="form-input font-bold"><option>箱 (1箱=200根)</option><option>包 (1包=10根)</option><option>根 (基本单位)</option></select>
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label class="text-[11px] font-bold text-slate-500 ml-1">默认销售单位 (出库)</label>
-                                        <select class="form-input font-bold text-brand-600"><option>包 (1包=10根)</option><option>根 (基本单位)</option><option>箱 (1箱=200根)</option></select>
-                                    </div>
-
-                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">当前库存总量 (基本单位)</label><input type="number" value="1200" class="form-input font-mono"></div>
-
-                                    <div class="space-y-2 col-span-full">
-                                        <label class="text-[11px] font-bold text-slate-500 ml-1">关联主供应商</label>
-                                        <select class="form-input font-bold text-slate-700">
-                                            <option>哈尔滨红运冷链贸易中心 (Rating: A)</option>
-                                            <option>大连大发制冷厂</option>
-                                            <option>广东恒温物流服务公司</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <!-- 2. 高级隐藏项 (抽屉式) -->
-                            <section class="pt-6 border-t border-slate-50">
-                                <button onclick="toggleAdvanced()" class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-brand-600 transition-colors group">
-                                    <span>展开高级配置与描述信息</span><i id="advanced-icon" class="ph ph-caret-down group-hover:translate-y-0.5 transition-transform"></i>
-                                </button>
-                                <div id="advanced-drawer" class="advanced-drawer">
-                                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预警库存下限</label><input type="number" value="100" class="form-input border-red-100"></div>
-                                        <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">主销区域</label><input type="text" value="华北/华东" class="form-input"></div>
-                                        <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品详细描述</label><textarea class="form-input h-24 no-scrollbar">经典原味，特级奶油，-18度冷链保存。2026 年新包装版。</textarea></div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-
-                        <!-- 弹窗底部操作区 -->
-                        <div class="p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
-                            <p class="text-[10px] text-slate-400 italic">保存后将自动更新单据提取与库存算力逻辑</p>
-                            <div class="flex gap-3 w-full md:w-auto">
-                                <button onclick="closeProductDetail()" class="flex-1 md:flex-none px-8 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">取消返回</button>
-                                <button onclick="saveProduct()" class="flex-[2] md:flex-none px-12 py-3 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition active:scale-95 flex items-center justify-center gap-2">
-                                    <i class="ph ph-floppy-disk-back"></i> 保存修改内容
-                                </button>
+                            <!-- 模拟地点 Pins -->
+                            <div class="absolute top-1/4 left-1/3 p-2 bg-white rounded shadow-lg border border-slate-100 animate-bounce">
+                                <p class="text-[9px] font-bold">深圳电子 (A+)</p>
+                                <div class="w-2 h-2 bg-brand-500 rounded-full mx-auto"></div>
+                            </div>
+                            <div class="absolute bottom-1/3 right-1/4 p-2 bg-white rounded shadow-lg border border-risk-high/30">
+                                <p class="text-[9px] font-bold text-risk-high">东莞包材 (延期)</p>
+                                <div class="w-2 h-2 bg-risk-high rounded-full mx-auto animate-ping"></div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- [二级弹窗] 单位换算配置 -->
-                <div id="unit-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
-                    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeUnitModal()"></div>
-                    <div class="relative bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl fade-in text-left">
-                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph ph-scales text-brand-500"></i> 单位换算配置</h3>
-                        <div class="space-y-6">
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">包装单位</label><input type="text" value="箱" class="form-input text-center font-bold"></div>
-                                <div class="pt-4 text-slate-300">=</div>
-                                <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">折合基本数</label><input type="number" value="200" class="form-input text-center text-brand-600 font-black"></div>
-                                <div class="pt-4 text-xs font-bold text-slate-400">根</div>
+                    <!-- Right: Scorecard (Span 1) -->
+                    <div class="lg:col-span-1 bg-white rounded border border-slate-200 shadow-sm p-6 overflow-y-auto h-auto lg:h-auto">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">绩效评分卡</h3>
+                        <div class="space-y-4">
+                            <!-- Supplier 1 -->
+                            <div class="border border-slate-100 rounded p-3">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-sm font-bold text-slate-700">深圳照明科技</span>
+                                    <span class="text-xs font-mono font-bold text-green-600">A+</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
+                                    <div class="w-[95%] bg-green-500 h-full"></div>
+                                </div>
+                                <p class="text-[10px] text-slate-400">准时交付率: 98%</p>
                             </div>
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1"><input type="text" value="包" class="form-input text-center font-bold"></div>
-                                <div class="pt-1 text-slate-300">=</div>
-                                <div class="flex-1"><input type="number" value="10" class="form-input text-center text-brand-600 font-black"></div>
-                                <div class="pt-1 text-xs font-bold text-slate-400">根</div>
-                            </div>
-                        </div>
-                        <button onclick="closeUnitModal()" class="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-bold shadow-lg active:scale-95">保存换算规则</button>
-                    </div>
-                </div>
-
-                <!-- ================= [5] 供应商管理 SUPPLIER ================= -->
-                <div id="view-supplier" class="view-section hidden w-full p-4 md:p-8 space-y-4 md:space-y-0 fade-in">
-                    <!-- 恢复 lg:grid-cols-3 布局：左侧地图，右侧评分卡 -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-
-                        <!-- Left: Map (Span 2) -->
-                        <div class="lg:col-span-2 bg-white rounded border border-slate-200 shadow-sm flex flex-col h-[500px] lg:h-auto">
-                            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">供应商风险地图</h3>
-                                <div class="flex items-center space-x-2 text-[10px]">
-                                    <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span> 低风险</span>
-                                    <span class="flex items-center"><span class="w-2 h-2 bg-red-500 rounded-full mr-1"></span> 高风险</span>
+                            <!-- Supplier 2 -->
+                            <div class="border border-red-100 bg-red-50/10 rounded p-3">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-sm font-bold text-slate-700">东莞包装制品</span>
+                                    <span class="text-xs font-mono font-bold text-red-600">C-</span>
                                 </div>
-                            </div>
-                            <div class="flex-1 bg-slate-50 relative flex items-center justify-center overflow-hidden">
-                                <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#94a3b8 1px, transparent 1px); background-size: 20px 20px;"></div>
-                                <i class="ph ph-globe-hemisphere-east text-8xl text-slate-300"></i>
-
-                                <!-- 模拟地点 Pins -->
-                                <div class="absolute top-1/4 left-1/3 p-2 bg-white rounded shadow-lg border border-slate-100 animate-bounce">
-                                    <p class="text-[9px] font-bold">深圳电子 (A+)</p>
-                                    <div class="w-2 h-2 bg-brand-500 rounded-full mx-auto"></div>
+                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
+                                    <div class="w-[60%] bg-red-500 h-full"></div>
                                 </div>
-                                <div class="absolute bottom-1/3 right-1/4 p-2 bg-white rounded shadow-lg border border-risk-high/30">
-                                    <p class="text-[9px] font-bold text-risk-high">东莞包材 (延期)</p>
-                                    <div class="w-2 h-2 bg-risk-high rounded-full mx-auto animate-ping"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Scorecard (Span 1) -->
-                        <div class="lg:col-span-1 bg-white rounded border border-slate-200 shadow-sm p-6 overflow-y-auto h-auto lg:h-auto">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">绩效评分卡</h3>
-                            <div class="space-y-4">
-                                <!-- Supplier 1 -->
-                                <div class="border border-slate-100 rounded p-3">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <span class="text-sm font-bold text-slate-700">深圳照明科技</span>
-                                        <span class="text-xs font-mono font-bold text-green-600">A+</span>
-                                    </div>
-                                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
-                                        <div class="w-[95%] bg-green-500 h-full"></div>
-                                    </div>
-                                    <p class="text-[10px] text-slate-400">准时交付率: 98%</p>
-                                </div>
-                                <!-- Supplier 2 -->
-                                <div class="border border-red-100 bg-red-50/10 rounded p-3">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <span class="text-sm font-bold text-slate-700">东莞包装制品</span>
-                                        <span class="text-xs font-mono font-bold text-red-600">C-</span>
-                                    </div>
-                                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
-                                        <div class="w-[60%] bg-red-500 h-full"></div>
-                                    </div>
-                                    <p class="text-[10px] text-red-400 font-bold">警告: 原料短缺风险</p>
-                                </div>
+                                <p class="text-[10px] text-red-400 font-bold">警告: 原料短缺风险</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-</main>
+        </div>
+    </main>
 
     <!-- 3. 手机端导航 (已补全供应商管理) -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-1 py-2 flex justify-between items-end z-40 shadow-2xl pb-safe">
@@ -1362,75 +1364,75 @@
                     if (legend) {
                         legend.style.display = 'flex';
                         legend.innerHTML = `
-                                            <span class="flex items-center gap-1"><span class="w-2 h-2 bg-brand-500 rounded-full"></span> 实绩</span>
-                                            <span class="flex items-center gap-1"><span class="w-2 h-2 bg-slate-200 rounded-full"></span> 历史</span>
-                                            <span class="flex items-center gap-1"><span class="w-2 h-0.5 border-t border-brand-500 border-dashed"></span> 预测</span>
-                                        `;
+                                                <span class="flex items-center gap-1"><span class="w-2 h-2 bg-brand-500 rounded-full"></span> 实绩</span>
+                                                <span class="flex items-center gap-1"><span class="w-2 h-2 bg-slate-200 rounded-full"></span> 历史</span>
+                                                <span class="flex items-center gap-1"><span class="w-2 h-0.5 border-t border-brand-500 border-dashed"></span> 预测</span>
+                                            `;
                     }
 
                     // 重新定义容器布局：[Y轴区域] + [主绘图区]
                     container.className = 'flex-1 flex flex-row items-stretch overflow-hidden pt-4';
 
                     container.innerHTML = `
-                                            <!-- 1. Y轴刻度区域 -->
-                                            <div class="flex flex-col justify-between mb-8 pb-1 axis-text shrink-0 text-right w-10 pr-3 border-r border-slate-100">
-                                                <span>20k</span>
-                                                <span>15k</span>
-                                                <span>10k</span>
-                                                <span>5k</span>
-                                                <span class="text-slate-300">0</span>
-                                            </div>
-
-                                            <!-- 2. 主绘图区 -->
-                                            <div class="relative flex-1 flex items-end justify-between px-2 md:px-6">
-                                                <!-- 背景水平辅助网格线 -->
-                                                <div class="absolute inset-0 flex flex-col justify-between mb-8 pb-1 pointer-events-none">
-                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                    <div class="w-full"></div> <!-- 底部基准线 -->
+                                                <!-- 1. Y轴刻度区域 -->
+                                                <div class="flex flex-col justify-between mb-8 pb-1 axis-text shrink-0 text-right w-10 pr-3 border-r border-slate-100">
+                                                    <span>20k</span>
+                                                    <span>15k</span>
+                                                    <span>10k</span>
+                                                    <span>5k</span>
+                                                    <span class="text-slate-300">0</span>
                                                 </div>
 
-                                            <!-- 数据列：[柱体 + 标签] 强绑定 -->
+                                                <!-- 2. 主绘图区 -->
+                                                <div class="relative flex-1 flex items-end justify-between px-2 md:px-6">
+                                                    <!-- 背景水平辅助网格线 -->
+                                                    <div class="absolute inset-0 flex flex-col justify-between mb-8 pb-1 pointer-events-none">
+                                                        <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                        <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                        <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                        <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                        <div class="w-full"></div> <!-- 底部基准线 -->
+                                                    </div>
 
-                                            <!-- 8月：历史 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim bg-slate-100 h-[40%] hover:bg-slate-200 transition-colors"></div>
-                                                <span class="axis-text mt-3">08月</span>
-                                            </div>
+                                                <!-- 数据列：[柱体 + 标签] 强绑定 -->
 
-                                            <!-- 9月：历史 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim bg-slate-100 h-[52%] hover:bg-slate-200 transition-colors"></div>
-                                                <span class="axis-text mt-3">09月</span>
-                                            </div>
+                                                <!-- 8月：历史 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim bg-slate-100 h-[40%] hover:bg-slate-200 transition-colors"></div>
+                                                    <span class="axis-text mt-3">08月</span>
+                                                </div>
 
-                                            <!-- 10月：历史 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim bg-slate-100 h-[45%] hover:bg-slate-200 transition-colors"></div>
-                                                <span class="axis-text mt-3">10月</span>
-                                            </div>
+                                                <!-- 9月：历史 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim bg-slate-100 h-[52%] hover:bg-slate-200 transition-colors"></div>
+                                                    <span class="axis-text mt-3">09月</span>
+                                                </div>
 
-                                            <!-- 11月：实绩上涨 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim bg-brand-100 h-[68%] border-t-2 border-brand-500"></div>
-                                                <span class="axis-text mt-3">11月</span>
-                                            </div>
+                                                <!-- 10月：历史 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim bg-slate-100 h-[45%] hover:bg-slate-200 transition-colors"></div>
+                                                    <span class="axis-text mt-3">10月</span>
+                                                </div>
 
-                                            <!-- 12月：实绩高峰 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim h-[82%] shadow-lg shadow-brand-500/10"></div>
-                                                <span class="axis-text mt-3">12月</span>
-                                            </div>
+                                                <!-- 11月：实绩上涨 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim bg-brand-100 h-[68%] border-t-2 border-brand-500"></div>
+                                                    <span class="axis-text mt-3">11月</span>
+                                                </div>
 
-                                            <!-- 1月：当前/预测 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
-                                                <div class="bar-item-slim h-[92%] bg-brand-50 border-2 border-dashed border-brand-400 opacity-80"></div>
-                                                <span class="axis-text mt-3 text-brand-600 font-bold">预测01</span>
+                                                <!-- 12月：实绩高峰 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim h-[82%] shadow-lg shadow-brand-500/10"></div>
+                                                    <span class="axis-text mt-3">12月</span>
+                                                </div>
+
+                                                <!-- 1月：当前/预测 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10">
+                                                    <div class="bar-item-slim h-[92%] bg-brand-50 border-2 border-dashed border-brand-400 opacity-80"></div>
+                                                    <span class="axis-text mt-3 text-brand-600 font-bold">预测01</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    `;
+                                        `;
                     // 隐藏旧的外部 Label 容器，防止布局位移
                     if (labelContainer) {
                         labelContainer.innerHTML = '';
@@ -1451,40 +1453,40 @@
                      * 移除 stroke-linecap，使用默认的 butt (平头)，确保衔接严丝合缝
                      */
                     container.innerHTML = `
-                                            <div class="chart-container-svg fade-in">
-                                            <svg width="180" height="180" viewBox="0 0 160 160">
-                                                <!-- 底部背景圆环 -->
-                                                <circle cx="80" cy="80" r="70" stroke="#F1F5F9" stroke-width="15" fill="none" />
+                                                <div class="chart-container-svg fade-in">
+                                                <svg width="180" height="180" viewBox="0 0 160 160">
+                                                    <!-- 底部背景圆环 -->
+                                                    <circle cx="80" cy="80" r="70" stroke="#F1F5F9" stroke-width="15" fill="none" />
 
-                                                <!-- 正常 (82%) - 起点: 12点钟 -->
-                                                <circle cx="80" cy="80" r="70" stroke="#14B8A6" stroke-width="15" fill="none"
-                                                    stroke-dasharray="360.65 439.82"
-                                                    stroke-dashoffset="0"
-                                                    transform="rotate(-90 80 80)" />
+                                                    <!-- 正常 (82%) - 起点: 12点钟 -->
+                                                    <circle cx="80" cy="80" r="70" stroke="#14B8A6" stroke-width="15" fill="none"
+                                                        stroke-dasharray="360.65 439.82"
+                                                        stroke-dashoffset="0"
+                                                        transform="rotate(-90 80 80)" />
 
-                                                <!-- 积压 (10%) - 起点: 紧随绿色终点 -->
-                                                <circle cx="80" cy="80" r="70" stroke="#F59E0B" stroke-width="15" fill="none"
-                                                    stroke-dasharray="43.98 439.82"
-                                                    stroke-dashoffset="-360.65"
-                                                    transform="rotate(-90 80 80)" />
+                                                    <!-- 积压 (10%) - 起点: 紧随绿色终点 -->
+                                                    <circle cx="80" cy="80" r="70" stroke="#F59E0B" stroke-width="15" fill="none"
+                                                        stroke-dasharray="43.98 439.82"
+                                                        stroke-dashoffset="-360.65"
+                                                        transform="rotate(-90 80 80)" />
 
-                                                <!-- 缺货 (8%) - 起点: 紧随黄色终点 -->
-                                                <circle cx="80" cy="80" r="70" stroke="#F43F5E" stroke-width="15" fill="none"
-                                                    stroke-dasharray="35.19 439.82"
-                                                    stroke-dashoffset="-404.63"
-                                                    transform="rotate(-90 80 80)" />
-                                            </svg>
-                                            <div class="donut-text-box">
-                                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">健康度</p>
-                                                <p class="text-3xl font-mono font-bold text-brand-600">82%</p>
+                                                    <!-- 缺货 (8%) - 起点: 紧随黄色终点 -->
+                                                    <circle cx="80" cy="80" r="70" stroke="#F43F5E" stroke-width="15" fill="none"
+                                                        stroke-dasharray="35.19 439.82"
+                                                        stroke-dashoffset="-404.63"
+                                                        transform="rotate(-90 80 80)" />
+                                                </svg>
+                                                <div class="donut-text-box">
+                                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">健康度</p>
+                                                    <p class="text-3xl font-mono font-bold text-brand-600">82%</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <!-- 图例展示 -->
-                                        <div class="flex gap-6 mt-8 text-[11px] font-bold">
-                                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-brand-500 rounded-sm"></span> 正常 82%</span>
-                                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-yellow-500 rounded-sm"></span> 积压 10%</span>
-                                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-500 rounded-sm"></span> 缺货 8%</span>
-                                        </div>`;
+                                            <!-- 图例展示 -->
+                                            <div class="flex gap-6 mt-8 text-[11px] font-bold">
+                                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-brand-500 rounded-sm"></span> 正常 82%</span>
+                                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-yellow-500 rounded-sm"></span> 积压 10%</span>
+                                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-500 rounded-sm"></span> 缺货 8%</span>
+                                            </div>`;
                     labelContainer.innerHTML = '';
                 }
                 else if (type === 'profit') {
@@ -1492,78 +1494,78 @@
                     if (legend) {
                         legend.style.display = 'flex';
                         legend.innerHTML = `
-                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #FBBF24, #D97706);"></span> 第一名</span>
-                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #34D399, #059669);"></span> 第二名</span>
-                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #22D3EE, #0891B2);"></span> 第三名</span>
-                                        `;
+                                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #FBBF24, #D97706);"></span> 第一名</span>
+                                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #34D399, #059669);"></span> 第二名</span>
+                                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: linear-gradient(to bottom, #22D3EE, #0891B2);"></span> 第三名</span>
+                                            `;
                     }
 
                     container.className = 'flex-1 flex flex-col w-full px-4 md:px-10 justify-center gap-8';
 
                     container.innerHTML = `
-                                                <!-- Top 1 -->
-                                                <div class="w-full fade-in group">
-                                                    <div class="flex justify-between items-end mb-2.5">
-                                                        <div class="flex items-center gap-3">
-                                                            <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-yellow-300 to-yellow-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-yellow-100">1</span>
-                                                            <div>
-                                                                <p class="text-sm font-bold text-slate-900 tracking-tight">金色镂空户外灯具 (V3)</p>
-                                                                <p class="text-[10px] text-slate-400 font-medium">中东/欧美市场畅销款</p>
+                                                    <!-- Top 1 -->
+                                                    <div class="w-full fade-in group">
+                                                        <div class="flex justify-between items-end mb-2.5">
+                                                            <div class="flex items-center gap-3">
+                                                                <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-yellow-300 to-yellow-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-yellow-100">1</span>
+                                                                <div>
+                                                                    <p class="text-sm font-bold text-slate-900 tracking-tight">金色镂空户外灯具 (V3)</p>
+                                                                    <p class="text-[10px] text-slate-400 font-medium">中东/欧美市场畅销款</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="text-right">
+                                                                <p class="text-[10px] text-yellow-600 font-bold uppercase tracking-widest">Gross Profit</p>
+                                                                <p class="text-lg font-mono font-black text-slate-900">$42,000</p>
                                                             </div>
                                                         </div>
-                                                        <div class="text-right">
-                                                            <p class="text-[10px] text-yellow-600 font-bold uppercase tracking-widest">Gross Profit</p>
-                                                            <p class="text-lg font-mono font-black text-slate-900">$42,000</p>
+                                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
+                                                            <div class="h-full rounded-full transition-all duration-1000 shadow-sm group-hover:brightness-110"
+                                                                style="width: 92%; background: linear-gradient(90deg, #FDE68A 0%, #F59E0B 100%); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);"></div>
                                                         </div>
                                                     </div>
-                                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
-                                                        <div class="h-full rounded-full transition-all duration-1000 shadow-sm group-hover:brightness-110"
-                                                            style="width: 92%; background: linear-gradient(90deg, #FDE68A 0%, #F59E0B 100%); box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);"></div>
-                                                    </div>
-                                                </div>
 
-                                                <!-- Top 2 -->
-                                                <div class="w-full fade-in group" style="animation-delay: 0.1s">
-                                                    <div class="flex justify-between items-end mb-2.5">
-                                                        <div class="flex items-center gap-3">
-                                                            <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-emerald-300 to-emerald-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-emerald-100">2</span>
-                                                            <div>
-                                                                <p class="text-sm font-bold text-slate-800 tracking-tight">智能感应极简香薰机</p>
-                                                                <p class="text-[10px] text-slate-400 font-medium">东南亚区域利润之星</p>
+                                                    <!-- Top 2 -->
+                                                    <div class="w-full fade-in group" style="animation-delay: 0.1s">
+                                                        <div class="flex justify-between items-end mb-2.5">
+                                                            <div class="flex items-center gap-3">
+                                                                <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-emerald-300 to-emerald-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-emerald-100">2</span>
+                                                                <div>
+                                                                    <p class="text-sm font-bold text-slate-800 tracking-tight">智能感应极简香薰机</p>
+                                                                    <p class="text-[10px] text-slate-400 font-medium">东南亚区域利润之星</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="text-right">
+                                                                <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Gross Profit</p>
+                                                                <p class="text-lg font-mono font-black text-slate-800">$28,500</p>
                                                             </div>
                                                         </div>
-                                                        <div class="text-right">
-                                                            <p class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Gross Profit</p>
-                                                            <p class="text-lg font-mono font-black text-slate-800">$28,500</p>
+                                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
+                                                            <div class="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
+                                                                style="width: 65%; background: linear-gradient(90deg, #6EE7B7 0%, #059669 100%); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);"></div>
                                                         </div>
                                                     </div>
-                                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
-                                                        <div class="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
-                                                            style="width: 65%; background: linear-gradient(90deg, #6EE7B7 0%, #059669 100%); box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);"></div>
-                                                    </div>
-                                                </div>
 
-                                                <!-- Top 3 -->
-                                                <div class="w-full fade-in group" style="animation-delay: 0.2s">
-                                                    <div class="flex justify-between items-end mb-2.5">
-                                                        <div class="flex items-center gap-3">
-                                                            <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-cyan-300 to-cyan-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-cyan-100">3</span>
-                                                            <div>
-                                                                <p class="text-sm font-bold text-slate-800 tracking-tight">多功能户外折叠桌板</p>
-                                                                <p class="text-[10px] text-slate-400 font-medium">高频爆款薄利多销</p>
+                                                    <!-- Top 3 -->
+                                                    <div class="w-full fade-in group" style="animation-delay: 0.2s">
+                                                        <div class="flex justify-between items-end mb-2.5">
+                                                            <div class="flex items-center gap-3">
+                                                                <span class="flex items-center justify-center w-7 h-7 bg-gradient-to-br from-cyan-300 to-cyan-600 text-white text-xs font-black rounded-lg shadow-md ring-2 ring-cyan-100">3</span>
+                                                                <div>
+                                                                    <p class="text-sm font-bold text-slate-800 tracking-tight">多功能户外折叠桌板</p>
+                                                                    <p class="text-[10px] text-slate-400 font-medium">高频爆款薄利多销</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="text-right">
+                                                                <p class="text-[10px] text-cyan-600 font-bold uppercase tracking-widest">Gross Profit</p>
+                                                                <p class="text-lg font-mono font-black text-slate-800">$14,200</p>
                                                             </div>
                                                         </div>
-                                                        <div class="text-right">
-                                                            <p class="text-[10px] text-cyan-600 font-bold uppercase tracking-widest">Gross Profit</p>
-                                                            <p class="text-lg font-mono font-black text-slate-800">$14,200</p>
+                                                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
+                                                            <div class="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
+                                                                style="width: 35%; background: linear-gradient(90deg, #67E8F9 0%, #0891B2 100%); box-shadow: 0 2px 8px rgba(8, 145, 178, 0.2);"></div>
                                                         </div>
                                                     </div>
-                                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-[1px]">
-                                                        <div class="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
-                                                            style="width: 35%; background: linear-gradient(90deg, #67E8F9 0%, #0891B2 100%); box-shadow: 0 2px 8px rgba(8, 145, 178, 0.2);"></div>
-                                                    </div>
-                                                </div>
-                                            `;
+                                                `;
 
                     // 同步隐藏底部 Label
                     if (labelContainer) {
@@ -1576,67 +1578,67 @@
                     if (legend) {
                         legend.style.display = 'flex';
                         legend.innerHTML = `
-                                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #10B981;"></span> 健康</span>
-                                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #F59E0B;"></span> 关注</span>
-                                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #EA580C;"></span> 风险</span>
-                                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #F43F5E;"></span> 高危</span>
-                                    `;
+                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #10B981;"></span> 健康</span>
+                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #F59E0B;"></span> 关注</span>
+                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #EA580C;"></span> 风险</span>
+                                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background: #F43F5E;"></span> 高危</span>
+                                        `;
                     }
 
                     // 容器布局：[Y轴区域] + [绘图主区]
                     container.className = 'flex-1 flex flex-row items-stretch overflow-hidden pt-6';
 
                     container.innerHTML = `
-                                        <!-- 1. Y轴刻度区域 -->
-                                        <div class="flex flex-col justify-between mb-9 pb-1 axis-text shrink-0 text-right w-12 pr-3 border-r border-slate-100">
-                                            <span>$40k</span>
-                                            <span>$30k</span>
-                                            <span>$20k</span>
-                                            <span>$10k</span>
-                                            <span class="text-slate-300">0</span>
-                                        </div>
-
-                                        <!-- 2. 绘图主区 -->
-                                        <div class="relative flex-1 flex items-end justify-around px-2 md:px-12">
-                                            <!-- 背景辅助水平网格线 -->
-                                            <div class="absolute inset-0 flex flex-col justify-between mb-9 pb-1 pointer-events-none">
-                                                <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                <div class="w-full border-t border-slate-50 border-dashed"></div>
-                                                <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                            <!-- 1. Y轴刻度区域 -->
+                                            <div class="flex flex-col justify-between mb-9 pb-1 axis-text shrink-0 text-right w-12 pr-3 border-r border-slate-100">
+                                                <span>$40k</span>
+                                                <span>$30k</span>
+                                                <span>$20k</span>
+                                                <span>$10k</span>
+                                                <span class="text-slate-300">0</span>
                                             </div>
 
-                                            <!-- 账龄柱状列 -->
+                                            <!-- 2. 绘图主区 -->
+                                            <div class="relative flex-1 flex items-end justify-around px-2 md:px-12">
+                                                <!-- 背景辅助水平网格线 -->
+                                                <div class="absolute inset-0 flex flex-col justify-between mb-9 pb-1 pointer-events-none">
+                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                    <div class="w-full border-t border-slate-50 border-dashed"></div>
+                                                </div>
 
-                                            <!-- 0-30D：健康绿 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
-                                                <div class="bar-item-slim transition-all group-hover:scale-x-110"
-                                                    style="background: linear-gradient(180deg, #34D399 0%, #10B981 100%); height: 85%; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);"></div>
-                                                <span class="axis-text mt-3 tracking-tighter">0-30D</span>
-                                            </div>
+                                                <!-- 账龄柱状列 -->
 
-                                            <!-- 31-60D：关注黄 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
-                                                <div class="bar-item-slim transition-all group-hover:scale-x-110"
-                                                    style="background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%); height: 48%; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);"></div>
-                                                <span class="axis-text mt-3 tracking-tighter">31-60D</span>
-                                            </div>
+                                                <!-- 0-30D：健康绿 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
+                                                    <div class="bar-item-slim transition-all group-hover:scale-x-110"
+                                                        style="background: linear-gradient(180deg, #34D399 0%, #10B981 100%); height: 85%; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);"></div>
+                                                    <span class="axis-text mt-3 tracking-tighter">0-30D</span>
+                                                </div>
 
-                                            <!-- 61-90D：风险橙 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
-                                                <div class="bar-item-slim transition-all group-hover:scale-x-110"
-                                                    style="background: linear-gradient(180deg, #FB923C 0%, #EA580C 100%); height: 28%; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);"></div>
-                                                <span class="axis-text mt-3 tracking-tighter">61-90D</span>
-                                            </div>
+                                                <!-- 31-60D：关注黄 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
+                                                    <div class="bar-item-slim transition-all group-hover:scale-x-110"
+                                                        style="background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%); height: 48%; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);"></div>
+                                                    <span class="axis-text mt-3 tracking-tighter">31-60D</span>
+                                                </div>
 
-                                            <!-- >90D：高危红 -->
-                                            <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
-                                                <div class="bar-item-slim animate-pulse transition-all group-hover:scale-x-110"
-                                                    style="background: linear-gradient(180deg, #FB7185 0%, #F43F5E 100%); height: 15%; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);"></div>
-                                                <span class="axis-text mt-3 text-pink-600 font-bold tracking-tighter">>90D</span>
+                                                <!-- 61-90D：风险橙 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
+                                                    <div class="bar-item-slim transition-all group-hover:scale-x-110"
+                                                        style="background: linear-gradient(180deg, #FB923C 0%, #EA580C 100%); height: 28%; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);"></div>
+                                                    <span class="axis-text mt-3 tracking-tighter">61-90D</span>
+                                                </div>
+
+                                                <!-- >90D：高危红 -->
+                                                <div class="flex flex-col items-center flex-1 h-full justify-end z-10 group">
+                                                    <div class="bar-item-slim animate-pulse transition-all group-hover:scale-x-110"
+                                                        style="background: linear-gradient(180deg, #FB7185 0%, #F43F5E 100%); height: 15%; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);"></div>
+                                                    <span class="axis-text mt-3 text-pink-600 font-bold tracking-tighter">>90D</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    `;
+                                        `;
 
                     // 彻底清空并隐藏旧的外部容器
                     if (labelContainer) {
