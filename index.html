@@ -133,46 +133,6 @@
                 box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
             }
 
-        /* 高级配置抽屉 */
-        .advanced-drawer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
-        }
-
-            .advanced-drawer.open {
-                max-height: 1000px;
-                transition: max-height 0.4s ease-in;
-            }
-
-        @media (max-width: 768px) {
-            #main-sidebar {
-                position: fixed;
-                inset-y: 0;
-                left: 0;
-                z-index: 50;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-                #main-sidebar.open {
-                    transform: translateX(0);
-                }
-
-            .crm-detail-active #crm-list-pane {
-                display: none;
-            }
-
-            .crm-detail-active #crm-detail-pane {
-                display: block;
-            }
-
-            .modal-content-box {
-                height: 95vh !important;
-                border-radius: 1.5rem 1.5rem 0 0 !important;
-            }
-        }
-
         .donut-ring {
             width: 160px;
             height: 160px;
@@ -220,17 +180,51 @@
                 height: 92vh !important;
                 border-radius: 1.5rem 1.5rem 0 0 !important;
             }
-        } 
-        
-        /* 响应式列表展示逻辑 */
+        }
+
+        /* CRM 列表卡片样式 */
+        .crm-action-btn {
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.2s ease;
+        }
+
+        .customer-card:hover .crm-action-btn {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
         @media (max-width: 768px) {
-            #main-sidebar { position: fixed; inset-y: 0; left: 0; z-index: 50; transform: translateX(-100%); transition: transform 0.3s ease; }
-            #main-sidebar.open { transform: translateX(0); }
-            .modal-content-box { height: 95vh !important; border-radius: 1.5rem 1.5rem 0 0 !important; }
-            
-            /* 手机端隐藏部分列 */
-            .col-hide-mobile { display: none !important; }
-            .col-width-mobile { width: 70% !important; }
+            #main-sidebar {
+                position: fixed;
+                inset-y: 0;
+                left: 0;
+                z-index: 50;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+                #main-sidebar.open {
+                    transform: translateX(0);
+                }
+
+            .crm-detail-active #crm-list-pane {
+                display: none;
+            }
+
+            .crm-detail-active #crm-detail-pane {
+                display: block;
+            }
+
+            .modal-content-box {
+                height: 95vh !important;
+                border-radius: 1.5rem 1.5rem 0 0 !important;
+            }
+
+            .crm-action-btn {
+                opacity: 1;
+                transform: none;
+            }
         }
     </style>
 
@@ -853,20 +847,48 @@
 
                 <!-- 1. 客户列表侧 (在手机端作为一级页面) -->
                 <div id="crm-list-pane" class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-full shrink-0">
-                    <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                        <span class="text-xs font-bold uppercase tracking-tight">客户列表 (124)</span>
-                        <i class="ph ph-plus-circle text-lg text-brand-600 cursor-pointer"></i>
+                    <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3">
+                        <!-- 第一行：标题与新增按钮 -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-black uppercase tracking-widest text-slate-400">客户名录 (124)</span>
+                            <button onclick="openClientEditModal('new')" class="flex items-center gap-1 px-3 py-1.5 bg-brand-500 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-brand-600 transition-all active:scale-95">
+                                <i class="ph ph-plus-bold"></i> 新增
+                            </button>
+                        </div>
+                        <!-- 第二行：搜索框 -->
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="crmSearchInput" onkeyup="filterCrmList()" placeholder="搜索姓名、电话、地区..." class="form-input text-[11px] pl-9 h-9">
+                        </div>
                     </div>
-                    <div class="flex-1 overflow-y-auto no-scrollbar">
-                        <!-- 客户项点击触发：手机端切换视图，网页端仅更新数据 -->
-                        <div onclick="showCrmDetail('Ahmed Al-Fayed')" class="p-4 border-b border-slate-100 bg-brand-50 border-l-4 border-l-brand-500 cursor-pointer hover:bg-brand-50 transition-all">
-                            <div class="flex justify-between font-bold text-sm text-slate-800">Ahmed Al-Fayed <span class="text-[10px] text-slate-400 font-normal">#8821</span></div>
-                            <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1 uppercase tracking-tighter"><span>Dubai, UAE</span></div>
+
+                    <div class="flex-1 overflow-y-auto no-scrollbar" id="customer-list-container">
+                        <!-- 客户项 1 -->
+                        <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group">
+                            <div onclick="switchCustomerDetail('Ahmed Al-Fayed', 'Dubai, UAE | Al-Noor Trading LLC')" class="pr-10">
+                                <div class="flex justify-between font-bold text-sm text-slate-800 card-name">Ahmed Al-Fayed <span class="text-[9px] text-slate-300 font-mono">#8821</span></div>
+                                <p class="text-[10px] text-slate-400 mt-0.5 card-info">Dubai, UAE | 138-xxxx-8888</p>
+                                <div class="flex gap-1.5 mt-2">
+                                    <span class="px-1.5 py-0.5 bg-brand-50 text-brand-600 text-[9px] border border-brand-200 rounded font-black uppercase tracking-tighter">高潜力</span>
+                                    <span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] border border-slate-200 rounded font-bold uppercase tracking-tighter">灯饰类</span>
+                                </div>
+                            </div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 crm-action-btn">
+                                <button onclick="openClientEditModal('edit', 'Ahmed')" class="p-2 bg-white shadow-md border border-slate-100 rounded-full text-slate-400 hover:text-brand-600"><i class="ph ph-pencil-simple text-sm"></i></button>
+                                <button onclick="confirmDeleteClient('Ahmed')" class="p-2 bg-white shadow-md border border-slate-100 rounded-full text-slate-400 hover:text-risk-high"><i class="ph ph-trash text-sm"></i></button>
+                            </div>
                         </div>
 
-                        <div onclick="showCrmDetail('John Smith')" class="p-4 border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer">
-                            <div class="flex justify-between font-bold text-sm text-slate-800">John Smith <span class="text-[10px] text-slate-400 font-normal">#8822</span></div>
-                            <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">New York, USA</p>
+                        <!-- 客户项 2 -->
+                        <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group">
+                            <div onclick="switchCustomerDetail('John Smith', 'New York, USA | Smith Supply Co.')" class="pr-10">
+                                <div class="flex justify-between font-bold text-sm text-slate-800 card-name">John Smith <span class="text-[9px] text-slate-300 font-mono">#8822</span></div>
+                                <p class="text-[10px] text-slate-500 mt-0.5 card-info">New York, USA | 212-xxxx-1111</p>
+                            </div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 crm-action-btn">
+                                <button onclick="openClientEditModal('edit', 'John')" class="p-2 bg-white shadow-md border border-slate-100 rounded-full text-slate-400 hover:text-brand-600"><i class="ph ph-pencil-simple text-sm"></i></button>
+                                <button onclick="confirmDeleteClient('John')" class="p-2 bg-white shadow-md border border-slate-100 rounded-full text-slate-400 hover:text-risk-high"><i class="ph ph-trash text-sm"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -941,6 +963,67 @@
                                 <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed italic">客户去年同期采购量翻倍。建议立即通过 WhatsApp 推送“金色复古”系列 2026 新款目录并提供 5% 专属早鸟优惠。</p>
                                 <button class="bg-brand-600 text-white text-xs px-6 py-2 rounded-lg font-bold shadow-md hover:bg-brand-700 transition">生成营销话术</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [3] 客户信息编辑弹窗 -->
+            <div id="client-edit-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeClientEditModal()"></div>
+                <div class="relative bg-white w-full max-w-4xl h-full max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                        <div class="flex items-center gap-3"><div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph ph-user-plus text-xl"></i></div><div><h2 class="text-sm font-black text-slate-800" id="client-modal-title">新增客户档案</h2><p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5 uppercase">Customer Registry</p></div></div>
+                        <button onclick="closeClientEditModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-8">
+                        <!-- 1. 核心联系信息 -->
+                        <section>
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph ph-identification-card text-brand-500 text-lg"></i> 核心联系信息</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">客户姓名 *</label><input type="text" id="cust-name" class="form-input font-bold"></div>
+                                <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">联系手机 *</label><input type="text" id="cust-phone" class="form-input font-mono"></div>
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">客户来源</label>
+                                    <select id="cust-source" class="form-input font-bold text-slate-700">
+                                        <option value="WECHAT">WECHAT (微信)</option>
+                                        <option value="ALIPAY">ALIPAY (支付宝)</option>
+                                        <option value="PHONE">PHONE (电话)</option>
+                                        <option value="OTHER">OTHER (其他)</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 ml-1">客户状态</label>
+                                    <select id="cust-status" class="form-input font-bold text-brand-600">
+                                        <option value="ACTIVE">活跃客户</option>
+                                        <option value="DORMANT">沉睡客户</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 2. 高级隐藏信息 -->
+                        <section class="pt-6 border-t border-slate-50">
+                            <button onclick="toggleAdvanced()" class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-brand-600 transition-colors group">
+                                <span>展开详细地址与档案摘要</span><i id="advanced-icon" class="ph ph-caret-down transition-transform group-hover:translate-y-0.5"></i>
+                            </button>
+                            <div id="advanced-drawer" class="advanced-drawer">
+                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">电子邮箱</label><input type="email" id="cust-email" class="form-input"></div>
+                                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">所属地区</label><input type="text" id="cust-region" class="form-input"></div>
+                                    <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">详细地址</label><input type="text" id="cust-address" class="form-input"></div>
+                                    <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">客户摘要</label><textarea id="cust-summary" class="form-input h-20 no-scrollbar"></textarea></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                        <p class="text-[10px] text-slate-400 italic">保存后将同步更新客户画像并自动分析采购周期</p>
+                        <div class="flex gap-3 w-full md:w-auto">
+                            <button onclick="closeClientEditModal()" class="flex-1 md:flex-none px-8 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">取消返回</button>
+                            <button onclick="saveClient()" class="flex-[2] md:flex-none px-12 py-3 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-xl hover:bg-brand-700 active:scale-95 transition-all">保存客户档案</button>
                         </div>
                     </div>
                 </div>
@@ -1899,6 +1982,51 @@
                 originalSwitchTab(tabId);
             }
         }
+
+        function switchCustomerDetail(name, info) {
+            document.getElementById('detail-name-display').innerText = name;
+            document.getElementById('detail-info-display').innerText = info;
+            toggleCustomerDetail(true);
+        }
+
+        // 3. 客户列表实时过滤
+        function filterCrmList() {
+            const input = document.getElementById('crmSearchInput').value.toUpperCase();
+            const cards = document.querySelectorAll('.customer-card');
+            cards.forEach(card => {
+                const text = card.innerText.toUpperCase();
+                card.style.display = text.includes(input) ? "" : "none";
+            });
+        }
+
+        // 客户编辑弹窗逻辑
+        function openClientEditModal(mode, name) {
+            const modal = document.getElementById('client-edit-modal');
+            const title = document.getElementById('client-modal-title');
+            if (mode === 'new') {
+                title.innerText = "新增客户资料";
+                document.getElementById('cust-name').value = "";
+                document.getElementById('cust-phone').value = "";
+            } else {
+                title.innerText = "编辑客户详情";
+                document.getElementById('cust-name').value = name === 'Ahmed' ? "Ahmed Al-Fayed" : "John Smith";
+            }
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeClientEditModal() { document.getElementById('client-edit-modal').classList.add('hidden'); document.body.style.overflow = ''; }
+
+        function toggleAdvanced() {
+            const drawer = document.getElementById('advanced-drawer');
+            const icon = document.getElementById('advanced-icon');
+            drawer.classList.toggle('open');
+            icon.classList.toggle('ph-caret-up');
+            icon.classList.toggle('ph-caret-down');
+        }
+
+        function confirmDeleteClient(name) { if (confirm(`确定删除客户 [${name}] 吗？`)) alert('删除成功'); }
+        function saveClient() { alert('客户资料已更新。'); closeClientEditModal(); }
 
         // --- 产研中心交互逻辑 ---//
         // 打开产品选择弹窗
