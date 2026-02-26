@@ -7,8 +7,11 @@
 
     <style>
         :root {
-            --brand-primary: #14B8A6; /* 确保这一行存在 */
-            /* ... 其他变量 */
+            --brand-primary: #14B8A6;
+            --brand-dark: #0F172A;
+            --slate-bg: #F1F5F9;
+            --text-main: #334155;
+            --risk-high: #F43F5E;
         }
 
         body {
@@ -72,6 +75,58 @@
             color: white !important;
             border-color: #14B8A6 !important;
             box-shadow: 0 4px 10px rgba(20, 184, 166, 0.2);
+        }
+
+        /* 录音呼吸波纹动画 */
+        .recording-pulse {
+            animation: pulse-active 1.5s infinite;
+            background-color: #EF4444 !important; /* 录音时强制变红 */
+        }
+
+        @keyframes pulse-active {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                transform: scale(1);
+            }
+        }
+
+        /* 统一按钮规范 */
+        .btn-brand {
+            background-color: var(--brand-primary) !important;
+            color: white !important;
+            transition: all 0.2s;
+        }
+
+            .btn-brand:hover {
+                filter: brightness(1.1);
+            }
+
+            .btn-brand:disabled {
+                background-color: #E2E8F0 !important;
+                color: #94A3B8 !important;
+                cursor: not-allowed !important;
+                box-shadow: none !important;
+            }
+
+        .btn-click-effect:active {
+            transform: scale(0.96);
+        }
+
+        /* 磨砂玻璃弹窗 */
+        .modal-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.5);
         }
 
         /* 报表美化 CSS */
@@ -320,14 +375,25 @@
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">周转率</p><div class="mt-2 font-mono font-bold text-slate-800">4.2</div></div>
                 </div>
 
-                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center text-sm font-bold text-slate-800"><i class="ph ph-magic-wand text-brand-600 mr-2 text-lg"></i> 订单智能提取录入</div>
+                <section class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden fade-in">
+                    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center text-sm font-bold text-slate-800"><i class="ph ph-magic-wand text-brand-600 mr-2 text-lg"></i> AI 订单快速提取</div>
                     <div class="flex flex-col md:flex-row md:divide-x divide-slate-100">
-                        <div class="p-8 md:w-1/3 flex items-center justify-around md:justify-center md:gap-12 bg-slate-50/50">
-                            <button class="flex flex-col items-center group active:scale-95 transition-transform"><div class="w-14 h-14 bg-brand-500 rounded-full flex items-center justify-center text-white shadow-lg transition tech-pulse"><i class="ph ph-microphone text-2xl"></i></div><span class="text-[11px] mt-2 font-bold text-slate-600 uppercase">语音输入</span></button>
-                            <button class="flex flex-col items-center group active:scale-95 transition-transform"><div class="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center text-white shadow-lg transition"><i class="ph ph-camera text-2xl"></i></div><span class="text-[11px] mt-2 font-bold text-slate-600 uppercase">拍照识别</span></button>
+                        <div class="p-8 md:w-1/3 flex items-center justify-around md:justify-center md:gap-16 bg-slate-50/30">
+                            <button onclick="openVoiceModal()" class="btn-click-effect flex flex-col items-center group">
+                                <div class="w-16 h-16 bg-brand-500 rounded-full flex items-center justify-center text-white shadow-xl hover:bg-brand-600 transition-all"><i class="ph ph-microphone-stage text-3xl"></i></div>
+                                <span class="text-xs mt-3 font-bold text-slate-600 uppercase">语音录入</span>
+                            </button>
+                            <button onclick="openPhotoModal()" class="btn-click-effect flex flex-col items-center group">
+                                <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-white shadow-xl hover:bg-slate-900 transition-all"><i class="ph ph-camera text-3xl"></i></div>
+                                <span class="text-xs mt-3 font-bold text-slate-600 uppercase">拍照提单</span>
+                            </button>
                         </div>
-                        <div class="p-6 md:w-2/3"><div class="relative"><textarea class="w-full h-32 bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-brand-500 transition resize-none no-scrollbar" placeholder="粘贴聊天记录或单据内容..."></textarea><button class="absolute bottom-4 right-4 bg-brand-600 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg">开始解析</button></div></div>
+                        <div class="p-6 md:w-2/3">
+                            <div class="relative">
+                                <textarea id="orderTextInput" class="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none resize-none focus:border-brand-500 transition-all" placeholder="在此粘贴聊天记录文本..."></textarea>
+                                <button onclick="handleTextSubmit()" class="btn-brand btn-click-effect absolute bottom-4 right-4 px-6 py-2 rounded-xl text-xs font-bold shadow-lg">开始解析</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -397,6 +463,71 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- ================= [弹窗 1] 语音输入交互 ================= -->
+            <div id="voice-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 modal-blur">
+                <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center fade-in">
+                    <div id="voice-ready-ui">
+                        <div class="w-24 h-24 bg-slate-100 rounded-full mx-auto flex items-center justify-center text-slate-300 mb-8"><i class="ph ph-microphone-stage text-5xl"></i></div>
+                        <h3 class="text-xl font-black text-slate-800 mb-2">语音提单助手</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-10 px-4">请点击下方按钮开始描述您的订单内容</p>
+                        <button onclick="startVoiceRecording()" class="btn-brand btn-click-effect w-full py-4 rounded-2xl font-bold shadow-xl">开始录音</button>
+                    </div>
+
+                    <div id="voice-active-ui" class="hidden">
+                        <div id="voice-pulse-icon" class="w-24 h-24 bg-brand-500 rounded-full mx-auto flex items-center justify-center text-white mb-8"><i class="ph ph-microphone text-5xl"></i></div>
+                        <div class="flex items-center justify-center gap-2 mb-2"><span class="w-2 h-2 bg-red-500 rounded-full animate-ping"></span><span class="text-lg font-black text-slate-800">正在录音...</span></div>
+                        <p class="text-2xl font-mono font-bold text-brand-600 mb-10" id="voice-timer">00:00</p>
+                        <button onclick="stopVoiceRecording()" class="btn-click-effect w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl">停止并提交解析</button>
+                    </div>
+
+                    <!-- 核心修复：AI 处理加载态容器 -->
+                    <div id="voice-processing-ui" class="hidden py-10">
+                        <div class="w-14 h-14 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
+                        <p class="text-sm font-bold text-brand-600 tracking-widest uppercase">AI 智脑解析中...</p>
+                    </div>
+
+                    <button onclick="closeVoiceModal()" class="mt-8 text-[10px] text-slate-400 font-bold uppercase tracking-widest">取消</button>
+                </div>
+            </div>
+
+            <!-- ================= [弹窗 2] 拍照识别弹窗 ================= -->
+            <div id="photo-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 modal-blur">
+                <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden fade-in modal-content-box text-left">
+                    <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-black text-slate-800 text-lg tracking-tight">选择识别来源</h3>
+                        <button onclick="closePhotoModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                    </div>
+                    <div class="p-8 space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="flex flex-col items-center p-6 rounded-3xl bg-slate-50 cursor-pointer hover:bg-brand-50 border-2 border-transparent hover:border-brand-200 transition-all group">
+                                <i class="ph ph-device-mobile-camera text-3xl mb-2 text-slate-400 group-hover:text-brand-600"></i>
+                                <span class="text-xs font-bold text-slate-800">实时拍照</span>
+                                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelected(this)">
+                            </label>
+                            <label class="flex flex-col items-center p-6 rounded-3xl bg-slate-50 cursor-pointer hover:bg-brand-50 border-2 border-transparent hover:border-brand-200 transition-all group">
+                                <i class="ph ph-image text-3xl mb-2 text-slate-400 group-hover:text-brand-600"></i>
+                                <span class="text-xs font-bold text-slate-800">本地文件</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoSelected(this)">
+                            </label>
+                        </div>
+                        <div id="photo-preview-area" class="hidden bg-slate-50 rounded-2xl p-2 border-2 border-dashed border-brand-100 relative">
+                            <img id="image-preview" class="w-full h-40 object-cover rounded-xl shadow-inner">
+                            <button onclick="resetPhoto()" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full"><i class="ph ph-x-bold"></i></button>
+                        </div>
+                        <!-- 核心修复：初始 disabled 状态 -->
+                        <button id="photo-submit-btn" disabled onclick="submitPhoto()" class="btn-brand btn-click-effect w-full py-4 rounded-2xl font-bold shadow-xl">提交并开始识别</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= [通用] 全局提示 Toast (核心补全) ================= -->
+            <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 z-[200] opacity-0 transition-all duration-500 pointer-events-none">
+                <div class="bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-white/10">
+                    <i class="ph ph-check-circle-fill text-brand-500 text-xl"></i>
+                    <span class="text-sm font-bold tracking-wide" id="toast-text">成功提示</span>
                 </div>
             </div>
 
@@ -1608,6 +1739,64 @@
             const ol = document.getElementById('sidebar-overlay');
             sb.classList.toggle('open');
             ol.classList.toggle('hidden');
+        }
+
+        // --- 语音逻辑 (修复版) ---
+        let recTimer;
+        function openVoiceModal() { document.getElementById('voice-modal').classList.remove('hidden'); setVoiceUI('ready'); }
+        function setVoiceUI(s) {
+            document.getElementById('voice-ready-ui').classList.toggle('hidden', s !== 'ready');
+            document.getElementById('voice-active-ui').classList.toggle('hidden', s !== 'active');
+            document.getElementById('voice-processing-ui').classList.toggle('hidden', s !== 'processing');
+        }
+        function startVoiceRecording() {
+            setVoiceUI('active');
+            document.getElementById('voice-pulse-icon').classList.add('recording-pulse');
+            let sec = 0;
+            recTimer = setInterval(() => { sec++; document.getElementById('voice-timer').innerText = `00:${sec.toString().padStart(2, '0')}`; }, 1000);
+        }
+        function stopVoiceRecording() {
+            clearInterval(recTimer);
+            document.getElementById('voice-pulse-icon').classList.remove('recording-pulse');
+            setVoiceUI('processing'); // 切换到 AI 处理中状态
+
+            // 核心修复：模拟处理闭环
+            setTimeout(() => {
+                closeVoiceModal();
+                showToast("语音解析成功，已生成草稿单据");
+            }, 2000);
+        }
+
+        function closeVoiceModal() { document.getElementById('voice-modal').classList.add('hidden'); clearInterval(recTimer); document.getElementById('voice-timer').innerText = "00:00"; }
+
+        // --- 拍照逻辑 (修复版) ---
+        function openPhotoModal() { document.getElementById('photo-modal').classList.remove('hidden'); resetPhoto(); }
+        function handlePhotoSelected(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('photo-preview-area').classList.remove('hidden');
+                    // 核心修复：选择图片后，手动移除按钮的禁用状态
+                    const btn = document.getElementById('photo-submit-btn');
+                    btn.disabled = false;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function resetPhoto() { document.getElementById('photo-preview-area').classList.add('hidden'); document.getElementById('photo-submit-btn').disabled = true; }
+        function submitPhoto() { closePhotoModal(); showToast("识别任务已提交 AI 队列"); }
+        function closePhotoModal() { document.getElementById('photo-modal').classList.add('hidden'); }
+
+        // --- 4. 文本解析逻辑 (修复清空动作) ---
+        function handleTextSubmit() {
+            const el = document.getElementById('orderTextInput');
+            if (!el.value.trim()) {
+                alert("请先粘贴订单文本");
+                return;
+            }
+            showToast("文本内容已提交 AI 解析");
+            el.value = ""; // 核心修复：提交后清空内容
         }
 
         // 弹窗 Tab 切换 (订单核对)
