@@ -44,7 +44,9 @@ function loadProductCenter() {
 }
 
 function loadSupplier() {
-    fetch('./modules/supply-chain/supply-chain.html')
+    // 添加时间戳参数，强制浏览器加载最新版本的文件
+    const timestamp = new Date().getTime();
+    fetch(`./modules/supply-chain/supply-chain.html?t=${timestamp}`)
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-supplier').innerHTML = data;
@@ -713,6 +715,298 @@ function filterCrmList() {
     });
 }
 
+// 产品中心相关函数
+function filterInventoryTable() {
+    const input = document.getElementById('inventorySearch').value.toUpperCase();
+    const rows = document.querySelectorAll('#existingProdTable tbody tr');
+    rows.forEach(row => {
+        const name = row.querySelector('.product-name-cell').innerText.toUpperCase();
+        const sku = row.querySelector('.product-sku-cell').innerText.toUpperCase();
+        row.style.display = (name.includes(input) || sku.includes(input)) ? "" : "none";
+    });
+}
+
+function openPurchaseSuggestionModal() {
+    const modal = document.getElementById('purchase-suggestion-modal');
+    const content = document.getElementById('purchase-suggestion-content');
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // 模拟API调用获取产品数据
+    setTimeout(() => {
+        // 模拟产品数据
+        const products = [
+            {
+                id: 1,
+                name: "金色镂空户外灯具 (V3)",
+                sku: "G-882101",
+                stock: 1240,
+                warning_stock: 100,
+                supplier_id: 1,
+                supplierName: "深圳照明科技",
+                price: 10.20
+            },
+            {
+                id: 2,
+                name: "多功能露营折叠桌",
+                sku: "CP-T2-04",
+                stock: 42,
+                warning_stock: 100,
+                supplier_id: 2,
+                supplierName: "广州户外用品有限公司",
+                price: 48.00
+            },
+            {
+                id: 3,
+                name: "智能感应香薰机",
+                sku: "AI-Aroma-01",
+                stock: 85,
+                warning_stock: 100,
+                supplier_id: 1,
+                supplierName: "深圳照明科技",
+                price: 25.50
+            }
+        ];
+        
+        // 筛选出库存低于预警值的产品
+        const suggestions = products.filter(p => p.stock <= p.warning_stock);
+        
+        // 按供应商分组
+        const groupedBySupplier = suggestions.reduce((acc, p) => {
+            const key = p.supplierName || '未知供应商';
+            if (!acc[key]) acc[key] = [];
+            acc[key].push({
+                id: p.id,
+                name: p.name,
+                sku: p.sku,
+                current: p.stock,
+                warning: p.warning_stock,
+                suggest: Math.max(0, p.warning_stock * 2 - p.stock),
+                price: p.price
+            });
+            return acc;
+        }, {});
+        
+        // 渲染进货建议
+        renderPurchaseSuggestion(groupedBySupplier);
+    }, 1000);
+}
+
+function renderPurchaseSuggestion(groupedBySupplier) {
+    const content = document.getElementById('purchase-suggestion-content');
+    if (!content) return;
+    
+    let html = '';
+    
+    Object.entries(groupedBySupplier).forEach(([supplier, products]) => {
+        let supplierTotal = 0;
+        
+        html += `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/30">
+                <h3 class="text-sm font-bold text-slate-800">${supplier}</h3>
+            </div>
+            
+            <!-- 桌面端表格 -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50/50 text-[10px] text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-4">产品名 (SKU)</th>
+                            <th class="px-6 py-4 text-right">缺货状态</th>
+                            <th class="px-6 py-4 text-right">建议采购</th>
+                            <th class="px-6 py-4 text-right">预估小计</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs divide-y divide-slate-50">
+        `;
+        
+        products.forEach(product => {
+            const subtotal = product.suggest * product.price;
+            supplierTotal += subtotal;
+            
+            html += `
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="font-bold text-slate-800">${product.name}</p>
+                                    <p class="text-[10px] text-slate-400 font-mono">SKU: ${product.sku}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold ${product.current <= product.warning ? 'text-risk-high' : 'text-slate-900'}">
+                                ${product.current} / ${product.warning}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <input type="number" value="${product.suggest}" min="0" class="w-20 px-2 py-1 border border-slate-200 rounded text-xs text-right">
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900">
+                                $${subtotal.toFixed(2)}
+                            </td>
+                        </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 手机端卡片 -->
+            <div class="md:hidden space-y-4 p-4">
+        `;
+        
+        products.forEach(product => {
+            const subtotal = product.suggest * product.price;
+            
+            html += `
+                <div class="border border-slate-100 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                            <i class="ph ph-package text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800">${product.name}</p>
+                            <p class="text-[10px] text-slate-400 font-mono">SKU: ${product.sku}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">缺货状态</span>
+                            <span class="font-mono font-bold ${product.current <= product.warning ? 'text-risk-high' : 'text-slate-900'}">
+                                ${product.current} / ${product.warning}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">建议采购</span>
+                            <input type="number" value="${product.suggest}" min="0" class="w-20 px-2 py-1 border border-slate-200 rounded text-xs text-right">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">预估小计</span>
+                            <span class="font-mono font-bold text-slate-900">$${subtotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+            </div>
+            
+            <div class="px-6 py-4 border-t border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                <span class="text-sm font-bold text-slate-800">供应商总计</span>
+                <span class="font-mono font-bold text-slate-900">$${supplierTotal.toFixed(2)}</span>
+            </div>
+        </div>
+        `;
+    });
+    
+    content.innerHTML = html;
+}
+
+function closePurchaseSuggestionModal() {
+    const modal = document.getElementById('purchase-suggestion-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function savePurchaseOrder() {
+    // 模拟保存进货单
+    closePurchaseSuggestionModal();
+    showToast('进货单已保存');
+}
+
+function showToast(message) {
+    // 创建toast元素
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    toast.innerText = message;
+    
+    // 添加到页面
+    document.body.appendChild(toast);
+    
+    // 2秒后移除
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 500);
+    }, 2000);
+}
+
+// 供应商编辑相关函数
+function openSupplierEditModal(supplierName, contact, phone, rating) {
+    const modal = document.getElementById('supplier-edit-modal');
+    if (modal) {
+        // 填充表单数据
+        if (supplierName) {
+            document.getElementById('supplier-name').value = supplierName;
+        }
+        if (contact) {
+            document.getElementById('supplier-contact').value = contact;
+        }
+        if (phone) {
+            document.getElementById('supplier-phone').value = phone;
+        }
+        if (rating) {
+            document.getElementById('supplier-rating').value = rating;
+        }
+        
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSupplierEditModal() {
+    const modal = document.getElementById('supplier-edit-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function saveSupplierEdit() {
+    // 获取表单数据
+    const name = document.getElementById('supplier-name').value;
+    const contact = document.getElementById('supplier-contact').value;
+    const phone = document.getElementById('supplier-phone').value;
+    const rating = document.getElementById('supplier-rating').value;
+    
+    // 模拟保存操作
+    console.log('保存供应商信息:', { name, contact, phone, rating });
+    
+    // 关闭弹窗并显示提示
+    closeSupplierEditModal();
+    showToast('供应商信息已保存');
+}
+
+// 仓库管理相关函数
+function openWarehouseDrawer() {
+    const drawer = document.getElementById('warehouse-drawer');
+    if (drawer) {
+        drawer.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeWarehouseDrawer() {
+    const drawer = document.getElementById('warehouse-drawer');
+    if (drawer) {
+        drawer.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function saveWarehouse() {
+    // 模拟保存操作
+    closeWarehouseDrawer();
+    showToast('仓库信息已保存');
+}
+
 // 客户编辑弹窗逻辑
 function openClientEditModal(mode, name) {
     const modal = document.getElementById('client-edit-modal');
@@ -847,32 +1141,57 @@ function toggleAdvanced() {
 
 // --- 供应商视图切换 ---
 function switchSupplierView(mode) {
-    const mapView = document.getElementById('sup-map-view');
+    // 尝试获取元素
     const listView = document.getElementById('sup-list-view');
-    const btnMap = document.getElementById('btn-sup-map');
+    const supplierView = document.getElementById('sup-supplier-view');
     const btnList = document.getElementById('btn-sup-list');
+    const btnSupplier = document.getElementById('btn-sup-supplier');
+    const supStatChips = document.getElementById('sup-stat-chips');
 
-    if (mode === 'map') {
+    // 检查元素是否存在
+    if (!listView || !supplierView || !btnList || !btnSupplier || !supStatChips) {
+        // 元素不存在，可能是模块还未加载完成
+        // 延迟一段时间后重试
+        setTimeout(() => {
+            switchSupplierView(mode);
+        }, 100);
+        return;
+    }
+
+    if (mode === 'list') {
         // 显示/隐藏内容
-        mapView.classList.remove('hidden');
-        listView.classList.add('hidden');
+        listView.classList.remove('hidden');
+        supplierView.classList.add('hidden');
 
         // 处理按钮状态
-        btnMap.classList.add('active');
-        btnList.classList.remove('active');
+        btnList.classList.add('active');
+        btnSupplier.classList.remove('active');
 
         // 修正颜色类名冲突 (清除 Tailwind 默认的灰色)
-        btnMap.classList.remove('text-slate-400');
-        btnList.classList.add('text-slate-400');
-    } else {
-        mapView.classList.add('hidden');
-        listView.classList.remove('hidden');
-
-        btnList.classList.add('active');
-        btnMap.classList.remove('active');
-
         btnList.classList.remove('text-slate-400');
-        btnMap.classList.add('text-slate-400');
+        btnSupplier.classList.add('text-slate-400');
+        
+        // 显示统计卡
+        supStatChips.classList.remove('hidden');
+    } else if (mode === 'supplier') {
+        listView.classList.add('hidden');
+        supplierView.classList.remove('hidden');
+
+        btnSupplier.classList.add('active');
+        btnList.classList.remove('active');
+
+        btnSupplier.classList.remove('text-slate-400');
+        btnList.classList.add('text-slate-400');
+        
+        // 隐藏统计卡
+        supStatChips.classList.add('hidden');
+    }
+}
+
+function confirmDeleteSupplier(supplierName) {
+    if (confirm(`确定要删除供应商 "${supplierName}" 吗？`)) {
+        // 模拟删除操作
+        showToast(`供应商 "${supplierName}" 已删除`);
     }
 }
 

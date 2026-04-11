@@ -1,43 +1,25 @@
 <!-- 产品中心模块 -->
 <div class="w-full p-4 md:p-8 space-y-6 fade-in">
-    <!-- 顶部决策卡片区 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- AI 选品预测 -->
-        <div class="bg-[#0B1221] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden flex justify-between items-center group">
-            <div class="absolute -right-6 -top-6 opacity-10 group-hover:scale-110 transition-transform duration-700"><i class="ph ph-trend-up text-[10rem]"></i></div>
-            <div class="relative z-10">
-                <h2 class="text-xl font-black italic tracking-tighter uppercase">AI Selection</h2>
-                <p class="text-xs text-[#14B8A6] mt-1 font-bold uppercase tracking-widest">市场选品趋势研讨</p>
-                <p class="text-xs text-slate-400 mt-4 italic max-w-xs">基于 TikTok 热度及区域节庆预测 Q1 爆款方向。</p>
+    <!-- 现有产品库 -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">现有产品库</h3>
+            <!-- 搜索框 -->
+            <div class="relative w-full md:w-72">
+                <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                <input type="text" id="inventorySearch" onkeyup="filterInventoryTable()" placeholder="快速搜索名称或 SKU..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500 shadow-sm transition-all">
             </div>
-            <button onclick="openWorkshopModal()" class="btn-brand px-6 py-2.5 rounded-xl text-xs font-black shadow-lg z-10">启动研讨</button>
+            <div class="flex items-center gap-3">
+                <!-- 仓库管理按钮 -->
+                <button onclick="openWarehouseDrawer()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition-colors">
+                    <i class="ph ph-buildings text-lg"></i>
+                </button>
+                <!-- 生成进货单据按钮 -->
+                <button onclick="openPurchaseSuggestionModal()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <i class="ph ph-receipt text-lg"></i> 生成进货单据
+                </button>
+            </div>
         </div>
-
-        <!-- 库存周转监控 -->
-        <div class="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex justify-between items-center group relative overflow-hidden">
-            <div class="absolute -right-6 -top-6 opacity-5"><i class="ph ph-shield-warning text-[10rem]"></i></div>
-            <div>
-                <h2 class="text-xl font-bold text-slate-800 tracking-tight">库存周转监控</h2>
-                <p class="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">Inventory Alerts</p>
-                <div class="mt-6 flex items-center gap-3">
-                    <span class="px-2.5 py-1 bg-red-50 text-red-500 text-[10px] font-black rounded-full uppercase">12 笔呆滞库存</span>
-                </div>
-            </div>
-            <button onclick="toggleModal('clearance-modal', true)" class="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-all">查看清理方案</button>
-        </div>
-    </div>
-
-    <!-- 左侧：产品库主表 (2/3 宽度) -->
-    <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">现有产品库</h3>
-                <!-- 搜索框 -->
-                <div class="relative w-full md:w-72">
-                    <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" id="inventorySearch" onkeyup="filterInventoryTable()" placeholder="快速搜索名称或 SKU..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500 shadow-sm transition-all">
-                </div>
-            </div>
 
             <div class="overflow-x-auto no-scrollbar">
                 <table class="w-full text-left border-collapse" id="existingProdTable">
@@ -103,22 +85,47 @@
                 </table>
             </div>
         </div>
-
     </div>
 
-    <!-- 右侧：关键进度 -->
-    <div class="space-y-6">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 min-h-[450px]">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-10 flex items-center gap-2"><i class="ph ph-truck text-[#14B8A6] text-lg"></i> 采购到货/货款监控</h3>
-            <div class="space-y-12">
-                <div class="relative pl-2">
-                    <div class="flex justify-between text-xs mb-3 font-bold text-slate-800"><span>单据 #PUR-2026-X8</span><span class="text-[#14B8A6] font-black">85%</span></div>
-                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden shadow-inner"><div class="w-[85%] bg-[#14B8A6] h-full rounded-full shadow-lg transition-all duration-1000"></div></div>
-                    <div class="mt-4 flex justify-between items-center">
-                        <span class="text-[10px] text-slate-400 italic">预计明日到仓</span>
-                        <span class="text-[9px] bg-green-50 text-green-600 px-2 py-0.5 rounded font-bold uppercase">已付全款</span>
+    <!-- 手机端卡片式布局 -->
+    <div class="md:hidden space-y-4" id="mobile-product-cards">
+        <!-- 产品卡片 1 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 product-card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i class="ph ph-lightbulb text-xl"></i></div>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">金色镂空户外灯具 (V3)</p>
+                    <p class="text-[10px] text-slate-400 font-mono uppercase">SKU: G-882101</p>
+                    <div class="mt-2 flex justify-between items-center">
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">中东市场</span>
+                        <p class="font-mono font-bold text-slate-900">1,240 Pcs</p>
                     </div>
+                    <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden"><div class="w-[85%] bg-brand-500 h-full"></div></div>
                 </div>
+            </div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="openProductDetail('edit')" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-brand-600"><i class="ph ph-pencil-simple-line text-lg"></i></button>
+                <button onclick="confirmDeleteProduct('金色镂空户外灯具')" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-risk-high"><i class="ph ph-trash text-lg"></i></button>
+            </div>
+        </div>
+        
+        <!-- 产品卡片 2 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 product-card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i class="ph ph-layout text-xl"></i></div>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">多功能露营折叠桌</p>
+                    <p class="text-[10px] text-slate-400 font-mono uppercase">SKU: CP-T2-04</p>
+                    <div class="mt-2 flex justify-between items-center">
+                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">欧美市场</span>
+                        <p class="font-mono font-bold text-risk-high">42 Pcs</p>
+                    </div>
+                    <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden"><div class="w-[30%] bg-risk-high h-full animate-pulse"></div></div>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="openProductDetail('edit')" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-brand-600"><i class="ph ph-pencil-simple-line text-lg"></i></button>
+                <button onclick="confirmDeleteProduct('多功能露营折叠桌')" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-risk-high"><i class="ph ph-trash text-lg"></i></button>
             </div>
         </div>
     </div>
@@ -320,5 +327,115 @@
             </div>
         </div>
         <button onclick="closeUnitModal()" class="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-bold shadow-lg active:scale-95">保存换算规则</button>
+    </div>
+</div>
+
+<!-- 进货建议弹窗 -->
+<div id="purchase-suggestion-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-0 md:p-8 modal-blur">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closePurchaseSuggestionModal()"></div>
+    <div class="relative bg-white w-full max-w-4xl h-full max-sm:h-full max-sm:rounded-none md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box">
+        <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="ph ph-receipt text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black text-slate-800 tracking-widest">进货建议</h2>
+                    <p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5">Purchase Suggestion</p>
+                </div>
+            </div>
+            <button onclick="closePurchaseSuggestionModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <i class="ph ph-x text-xl text-slate-400"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-8" id="purchase-suggestion-content">
+            <!-- 内容将通过 JavaScript 动态生成 -->
+            <div class="text-center py-12">
+                <i class="ph ph-hourglass-simple text-4xl text-slate-300 mb-4"></i>
+                <p class="text-sm text-slate-400">正在生成进货建议...</p>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0 max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:bg-white/90 max-sm:backdrop-blur">
+            <p class="text-[10px] text-slate-400 italic">基于当前库存预警值自动计算</p>
+            <div class="flex gap-3 w-full md:w-auto">
+                <button onclick="closePurchaseSuggestionModal()" class="flex-1 md:flex-none px-8 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">
+                    取消返回
+                </button>
+                <button onclick="savePurchaseOrder()" class="flex-[2] md:flex-none px-12 py-3 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="ph ph-floppy-disk-back"></i> 保存进货单
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 仓库管理抽屉 -->
+<div id="warehouse-drawer" class="hidden fixed right-0 inset-y-0 z-[130] w-96 bg-white shadow-2xl overflow-hidden flex flex-col">
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="ph ph-buildings text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-sm font-black text-slate-800 tracking-widest">仓库管理</h2>
+                <p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5">Warehouse Management</p>
+            </div>
+        </div>
+        <button onclick="closeWarehouseDrawer()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <i class="ph ph-x text-xl text-slate-400"></i>
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- 新增仓库 -->
+        <div class="bg-slate-50 rounded-2xl p-4">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">新增仓库</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase block mb-1">仓库名称</label>
+                    <input type="text" id="new-warehouse-name" class="form-input w-full bg-white border-slate-200 text-slate-800" placeholder="请输入仓库名称">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-400 uppercase block mb-1">位置</label>
+                    <input type="text" id="new-warehouse-location" class="form-input w-full bg-white border-slate-200 text-slate-800" placeholder="请输入仓库位置">
+                </div>
+                <button onclick="saveWarehouse()" class="w-full py-2.5 bg-brand-500 text-white text-xs font-bold rounded-xl hover:bg-brand-600 transition-colors">
+                    保存仓库
+                </button>
+            </div>
+        </div>
+
+        <!-- 仓库列表 -->
+        <div>
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">现有仓库</h3>
+            <div class="space-y-3">
+                <!-- 仓库 1 -->
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-slate-800">主仓库</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">深圳市宝安区福永街道</p>
+                        </div>
+                        <button class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                            <i class="ph ph-pencil text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- 仓库 2 -->
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-slate-800">备用仓库</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">深圳市龙岗区平湖街道</p>
+                        </div>
+                        <button class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                            <i class="ph ph-pencil text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
