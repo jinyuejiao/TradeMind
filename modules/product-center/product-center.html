@@ -1,0 +1,324 @@
+<!-- 产品中心模块 -->
+<div class="w-full p-4 md:p-8 space-y-6 fade-in">
+    <!-- 顶部决策卡片区 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- AI 选品预测 -->
+        <div class="bg-[#0B1221] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden flex justify-between items-center group">
+            <div class="absolute -right-6 -top-6 opacity-10 group-hover:scale-110 transition-transform duration-700"><i class="ph ph-trend-up text-[10rem]"></i></div>
+            <div class="relative z-10">
+                <h2 class="text-xl font-black italic tracking-tighter uppercase">AI Selection</h2>
+                <p class="text-xs text-[#14B8A6] mt-1 font-bold uppercase tracking-widest">市场选品趋势研讨</p>
+                <p class="text-xs text-slate-400 mt-4 italic max-w-xs">基于 TikTok 热度及区域节庆预测 Q1 爆款方向。</p>
+            </div>
+            <button onclick="openWorkshopModal()" class="btn-brand px-6 py-2.5 rounded-xl text-xs font-black shadow-lg z-10">启动研讨</button>
+        </div>
+
+        <!-- 库存周转监控 -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex justify-between items-center group relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 opacity-5"><i class="ph ph-shield-warning text-[10rem]"></i></div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800 tracking-tight">库存周转监控</h2>
+                <p class="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">Inventory Alerts</p>
+                <div class="mt-6 flex items-center gap-3">
+                    <span class="px-2.5 py-1 bg-red-50 text-red-500 text-[10px] font-black rounded-full uppercase">12 笔呆滞库存</span>
+                </div>
+            </div>
+            <button onclick="toggleModal('clearance-modal', true)" class="mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-all">查看清理方案</button>
+        </div>
+    </div>
+
+    <!-- 左侧：产品库主表 (2/3 宽度) -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">现有产品库</h3>
+                <!-- 搜索框 -->
+                <div class="relative w-full md:w-72">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" id="inventorySearch" onkeyup="filterInventoryTable()" placeholder="快速搜索名称或 SKU..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500 shadow-sm transition-all">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full text-left border-collapse" id="existingProdTable">
+                    <thead class="bg-slate-50/50 text-[10px] text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-4 col-width-mobile">产品基础信息</th>
+                            <th class="px-6 py-4 col-hide-mobile">主销区域</th>
+                            <th class="px-6 py-4 text-right col-hide-mobile">销售均价</th>
+                            <th class="px-6 py-4 text-right">实时库存</th>
+                            <th class="px-6 py-4 text-right">管理</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs divide-y divide-slate-50">
+                        <!-- 产品行 1 -->
+                        <tr onclick="openProductDetail('edit')" class="product-row hover:bg-slate-50 transition-all cursor-pointer group">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors"><i class="ph ph-lightbulb text-xl"></i></div>
+                                    <div>
+                                        <p class="font-bold text-slate-800 product-name-cell">金色镂空户外灯具 (V3)</p>
+                                        <p class="text-[10px] text-slate-400 font-mono product-sku-cell uppercase">SKU: G-882101</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 col-hide-mobile"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold">中东市场</span></td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-500 col-hide-mobile">$12.50</td>
+                            <td class="px-6 py-4 text-right">
+                                <p class="font-mono font-bold text-slate-900 tracking-tighter">1,240 <span class="text-[9px] text-slate-400 uppercase">Pcs</span></p>
+                                <div class="w-16 h-1 bg-slate-100 rounded-full mt-1.5 ml-auto overflow-hidden md:block hidden"><div class="w-[85%] bg-brand-500 h-full"></div></div>
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="openProductDetail('edit')" title="编辑" class="action-icon-btn"><i class="ph ph-pencil-simple-line text-lg"></i></button>
+                                    <button onclick="confirmDeleteProduct('金色镂空户外灯具')" title="删除" class="action-icon-btn delete"><i class="ph ph-trash text-lg"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- 产品行 2 -->
+                        <tr onclick="openProductDetail('edit')" class="product-row hover:bg-slate-50 transition-all cursor-pointer group">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors"><i class="ph ph-layout text-xl"></i></div>
+                                    <div>
+                                        <p class="font-bold text-slate-800 product-name-cell">多功能露营折叠桌</p>
+                                        <p class="text-[10px] text-slate-400 font-mono product-sku-cell uppercase">SKU: CP-T2-04</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 col-hide-mobile"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold">欧美市场</span></td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-500 col-hide-mobile">$48.00</td>
+                            <td class="px-6 py-4 text-right">
+                                <p class="font-mono font-bold text-risk-high tracking-tighter">42 <span class="text-[9px] text-slate-400 uppercase">Pcs</span></p>
+                                <div class="w-16 h-1 bg-slate-100 rounded-full mt-1.5 ml-auto overflow-hidden md:block hidden"><div class="w-[30%] bg-risk-high h-full animate-pulse"></div></div>
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="openProductDetail('edit')" class="action-icon-btn"><i class="ph ph-pencil-simple-line text-lg"></i></button>
+                                    <button onclick="confirmDeleteProduct('多功能露营折叠桌')" class="action-icon-btn delete"><i class="ph ph-trash text-lg"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 右侧：关键进度 -->
+    <div class="space-y-6">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 min-h-[450px]">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-10 flex items-center gap-2"><i class="ph ph-truck text-[#14B8A6] text-lg"></i> 采购到货/货款监控</h3>
+            <div class="space-y-12">
+                <div class="relative pl-2">
+                    <div class="flex justify-between text-xs mb-3 font-bold text-slate-800"><span>单据 #PUR-2026-X8</span><span class="text-[#14B8A6] font-black">85%</span></div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden shadow-inner"><div class="w-[85%] bg-[#14B8A6] h-full rounded-full shadow-lg transition-all duration-1000"></div></div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-[10px] text-slate-400 italic">预计明日到仓</span>
+                        <span class="text-[9px] bg-green-50 text-green-600 px-2 py-0.5 rounded font-bold uppercase">已付全款</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 产品成本溯源分析弹窗 -->
+<div id="cost-analysis-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-8 modal-blur">
+    <div class="absolute inset-0" onclick="closeCostAnalysis()"></div>
+    <div class="relative bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
+        <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center text-[#14B8A6] shadow-lg"><i class="ph ph-chart-line-up-bold text-2xl"></i></div>
+                <div><h2 class="text-lg font-black text-slate-800 tracking-tight">产品成本溯源分析</h2><p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase mt-0.5">Historical Purchase Analysis</p></div>
+            </div>
+            <button onclick="closeCostAnalysis()" class="p-2 hover:bg-slate-100 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-8 md:p-12 no-scrollbar space-y-12">
+            <!-- 极细柱状图 -->
+            <div class="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100">
+                <div class="flex justify-between items-center mb-8"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">进货单价走势 (Historical Average)</p></div>
+                <div class="h-32 flex items-end justify-between px-10 gap-2 md:gap-12">
+                    <div class="bar-item-slim flex-1 h-[40%]"></div><div class="bar-item-slim flex-1 h-[55%] opacity-60"></div><div class="bar-item-slim flex-1 h-[45%] opacity-60"></div><div class="bar-item-slim flex-1 h-[70%] opacity-80"></div><div class="bar-item-slim flex-1 h-[92%] shadow-lg shadow-[#14B8A6]/20"></div>
+                </div>
+            </div>
+
+            <!-- 历史表 -->
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-400 font-bold uppercase tracking-widest border-b">
+                        <tr><th class="px-6 py-4">日期/批次</th><th class="px-6 py-4">供应商</th><th class="px-6 py-4 text-center">进货单价</th><th class="px-6 py-4 text-right">进货量</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50 text-slate-700 font-medium">
+                        <tr class="hover:bg-slate-50 transition-colors"><td class="px-6 py-4 font-mono font-bold">2026.02.15<br><span class="text-[8px] font-normal text-slate-300">BATCH-26A</span></td><td class="px-6 py-4 font-black text-[#14B8A6]">深圳照明科技</td><td class="px-6 py-4 text-center font-mono font-black text-slate-900">$10.20</td><td class="px-6 py-4 text-right font-mono">1,000 Pcs</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="p-6 bg-white border-t border-slate-100"><button onclick="closeCostAnalysis()" class="w-full py-4 rounded-2xl border border-slate-200 text-xs font-bold text-slate-400 uppercase tracking-widest">Back to Inventory</button></div>
+    </div>
+</div>
+
+<!-- AI 选品研讨报告弹窗 -->
+<div id="workshop-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-0 md:p-8 modal-blur">
+    <div class="absolute inset-0" onclick="closeWorkshopModal()"></div>
+    <div class="relative bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box">
+        <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h2 class="text-sm font-black text-slate-800 tracking-widest uppercase italic"><i class="ph ph-sparkle text-[#14B8A6] mr-2 text-xl font-bold"></i> AI R&D Insight Report</h2>
+            <button onclick="closeWorkshopModal()" class="p-2 hover:bg-slate-200 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-12 no-scrollbar space-y-12 text-left">
+            <div class="text-center border-b border-slate-100 pb-10"><h1 class="text-3xl font-black text-slate-900 mb-3 tracking-tight">Q1 智能选品研讨与营收预测</h1><p class="text-[10px] text-slate-400 font-mono uppercase">Doc ID: TM-RD-2026-001 | 实时市场数据驱动</p></div>
+            <section><h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-6 bg-[#14B8A6] rounded-full"></span> 市场机遇与近期热点分析</h3><p class="text-sm text-slate-500 leading-relaxed indent-8">监测显示：TikTok 东南亚区域“极简户外”标签点击量环比增长 120%。结合阿联酋即将到来的节庆备货季，<span class="text-slate-900 font-bold">“长效储能光伏灯”</span>具备极高的爆品潜力。建议重点布局具备 IP65 防尘防水等级的单品。</p></section>
+            <section>
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-6 bg-[#14B8A6] rounded-full"></span> 产研财务指标预测</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200"><p class="text-[10px] text-slate-400 font-black uppercase mb-1">预测成本</p><p class="text-xl font-mono font-black text-slate-900">$12.50</p></div>
+                    <div class="p-5 bg-brand-50 rounded-2xl border border-brand-200"><p class="text-[10px] text-brand-600 font-black uppercase mb-1">建议售价</p><p class="text-xl font-mono font-black text-brand-600">$48.00</p></div>
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200"><p class="text-[10px] text-slate-400 font-black uppercase mb-1">首批预销</p><p class="text-xl font-mono font-black text-slate-900">2,500+</p></div>
+                    <div class="p-5 bg-brand-50 rounded-2xl border border-brand-200"><p class="text-[10px] text-brand-600 font-black uppercase mb-1">营收潜力</p><p class="text-xl font-mono font-black text-brand-600">$120k</p></div>
+                </div>
+            </section>
+            <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden"><div class="absolute -right-8 -top-8 opacity-10"><i class="ph ph-rocket-launch text-8xl"></i></div><p class="text-xs font-bold text-brand-400 mb-3 uppercase tracking-widest">Final Conclusion</p><p class="text-sm font-medium leading-relaxed italic">判定结果：<span class="text-brand-400 font-black">HIGH POTENTIAL</span>。建议立即启动首批 500 套打样，并利用当前汇率空档期锁定上游包材料成本。</p></div>
+        </div>
+        <div class="p-6 border-t border-slate-100 bg-white flex gap-4"><button onclick="closeWorkshopModal()" class="flex-1 py-4 rounded-2xl border border-slate-200 text-xs font-black text-slate-400 uppercase tracking-widest">Close Report</button></div>
+    </div>
+</div>
+
+<!-- 呆滞品清理方案弹窗 -->
+<div id="clearance-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-0 md:p-8 modal-blur">
+    <div class="absolute inset-0" onclick="closeClearanceModal()"></div>
+    <div class="relative bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box">
+        <div class="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div class="flex items-center gap-4"><div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white"><i class="ph ph-lightning-bold text-xl"></i></div><h2 class="text-sm font-black text-slate-800 uppercase tracking-widest italic">AI Inventory Clearance Plan</h2></div>
+            <button onclick="closeClearanceModal()" class="p-2 hover:bg-slate-100 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-10 no-scrollbar space-y-12 text-left">
+            <section>
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-6 bg-red-500 rounded-full"></span> 呆滞风险诊断结果</h3>
+                <div class="p-6 bg-red-50 border border-red-100 rounded-3xl text-sm text-red-700 leading-relaxed font-medium italic">“监测到共有 12 个 SKU 的库龄已超过 150 天，平均周转速度环比下降 42%。预计下月仓储成本溢出风险为高。建议立即处理。”</div>
+            </section>
+            <section>
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2"><span class="w-1.5 h-6 bg-red-500 rounded-full"></span> 建议执行策略 (Strategy)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-5 border border-slate-200 rounded-2xl">
+                        <p class="text-xs font-black text-slate-900 uppercase mb-2">1. 阶梯折扣促销</p>
+                        <p class="text-[11px] text-slate-400 leading-relaxed italic">针对 A 类大客户，推行‘买三赠一’或‘85折尾货清仓’政策，重点回笼现金流。</p>
+                    </div>
+                    <div class="p-5 border border-slate-200 rounded-2xl">
+                        <p class="text-xs font-black text-slate-900 uppercase mb-2">2. 区域调拨</p>
+                        <p class="text-[11px] text-slate-400 leading-relaxed italic">将当前积压的产品从华东仓调拨至需求旺季的东南亚分销点，平衡库存结构。</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="p-6 border-t border-slate-100 bg-white"><button onclick="closeClearanceModal()" class="w-full py-4 rounded-2xl bg-slate-900 text-white text-xs font-black shadow-xl uppercase tracking-widest active:scale-95 transition-transform">Execute Clearance Plan</button></div>
+    </div>
+</div>
+
+<!-- 产品详情编辑弹窗 -->
+<div id="product-detail-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeProductDetail()"></div>
+    <div class="relative bg-white w-full max-w-4xl h-full max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
+        <!-- 弹窗页眉 -->
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph ph-pencil-line text-xl"></i></div>
+                <div><h2 class="text-sm font-black text-slate-800" id="detail-title">产品详情编辑</h2><p class="text-[10px] text-slate-400 font-mono tracking-widest mt-0.5" id="detail-sku">SKU: ---</p></div>
+            </div>
+            <button onclick="closeProductDetail()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+        </div>
+
+        <!-- 详情内容区 -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-8">
+            <!-- 1. 核心经营信息 -->
+            <section>
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph ph-identification-card text-brand-500 text-lg"></i> 核心经营信息</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品全称</label><input type="text" value="东北大板 (原味经典)" class="form-input"></div>
+                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">SKU 编码</label><input type="text" value="DB-ICE-001" class="form-input font-mono"></div>
+                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预设销售价 (USD)</label><input type="number" value="1.50" class="form-input font-mono font-bold text-brand-600"></div>
+
+                    <!-- 单位角色配置组 -->
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-bold text-slate-500 ml-1">基本单位 (结算底数)</label>
+                        <div class="flex gap-2">
+                            <input type="text" value="根" class="form-input flex-1" placeholder="如：根">
+                            <button onclick="openUnitModal()" class="px-3 bg-brand-50 text-brand-600 rounded-xl text-[10px] font-bold border border-brand-100 hover:bg-brand-100 transition-colors whitespace-nowrap">配置单位换算</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-bold text-slate-500 ml-1">默认入库单位 (采购)</label>
+                        <select class="form-input font-bold"><option>箱 (1箱=200根)</option><option>包 (1包=10根)</option><option>根 (基本单位)</option></select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[11px] font-bold text-slate-500 ml-1">默认销售单位 (出库)</label>
+                        <select class="form-input font-bold text-brand-600"><option>包 (1包=10根)</option><option>根 (基本单位)</option><option>箱 (1箱=200根)</option></select>
+                    </div>
+
+                    <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">当前库存总量 (基本单位)</label><input type="number" value="1200" class="form-input font-mono"></div>
+
+                    <div class="space-y-2 col-span-full">
+                        <label class="text-[11px] font-bold text-slate-500 ml-1">关联主供应商</label>
+                        <select class="form-input font-bold text-slate-700">
+                            <option>哈尔滨红运冷链贸易中心 (Rating: A)</option>
+                            <option>大连大发制冷厂</option>
+                            <option>广东恒温物流服务公司</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. 高级隐藏项 (抽屉式) -->
+            <section class="pt-6 border-t border-slate-50">
+                <button onclick="toggleAdvanced()" class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-brand-600 transition-colors group">
+                    <span>展开高级配置与描述信息</span><i id="advanced-icon" class="ph ph-caret-down group-hover:translate-y-0.5 transition-transform"></i>
+                </button>
+                <div id="advanced-drawer" class="advanced-drawer">
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">预警库存下限</label><input type="number" value="100" class="form-input border-red-100"></div>
+                        <div class="space-y-2"><label class="text-[11px] font-bold text-slate-500 ml-1">主销区域</label><input type="text" value="华北/华东" class="form-input"></div>
+                        <div class="space-y-2 col-span-full"><label class="text-[11px] font-bold text-slate-500 ml-1">产品详细描述</label><textarea class="form-input h-24 no-scrollbar">经典原味，特级奶油，-18度冷链保存。2026 年新包装版。</textarea></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 弹窗底部操作区 -->
+        <div class="p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+            <p class="text-[10px] text-slate-400 italic">保存后将自动更新单据提取与库存算力逻辑</p>
+            <div class="flex gap-3 w-full md:w-auto">
+                <button onclick="closeProductDetail()" class="flex-1 md:flex-none px-8 py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">取消返回</button>
+                <button onclick="saveProduct()" class="flex-[2] md:flex-none px-12 py-3 rounded-2xl bg-brand-600 text-white text-xs font-black shadow-xl shadow-brand-500/30 hover:bg-brand-700 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="ph ph-floppy-disk-back"></i> 保存修改内容
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 单位换算配置弹窗 -->
+<div id="unit-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeUnitModal()"></div>
+    <div class="relative bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl fade-in text-left">
+        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><i class="ph ph-scales text-brand-500"></i> 单位换算配置</h3>
+        <div class="space-y-6">
+            <div class="flex items-center gap-4">
+                <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">包装单位</label><input type="text" value="箱" class="form-input text-center font-bold"></div>
+                <div class="pt-4 text-slate-300">=</div>
+                <div class="flex-1"><label class="text-[9px] font-black text-slate-400 uppercase block mb-1">折合基本数</label><input type="number" value="200" class="form-input text-center text-brand-600 font-black"></div>
+                <div class="pt-4 text-xs font-bold text-slate-400">根</div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex-1"><input type="text" value="包" class="form-input text-center font-bold"></div>
+                <div class="pt-1 text-slate-300">=</div>
+                <div class="flex-1"><input type="number" value="10" class="form-input text-center text-brand-600 font-black"></div>
+                <div class="pt-1 text-xs font-bold text-slate-400">根</div>
+            </div>
+        </div>
+        <button onclick="closeUnitModal()" class="w-full mt-8 bg-slate-900 text-white py-3 rounded-2xl text-xs font-bold shadow-lg active:scale-95">保存换算规则</button>
+    </div>
+</div>
