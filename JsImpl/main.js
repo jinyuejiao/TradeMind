@@ -1746,6 +1746,111 @@ window.closeCategoryModal = function() {
     document.getElementById('category-modal').classList.add('hidden');
 };
 
+// ============== 产品类别管理模块 ==============
+let pendingDeleteId = null;
+
+window.ProductModule = {
+    openCategoryManager: function() {
+        const modal = document.getElementById('category-modal-root');
+        if (modal) {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                const input = document.getElementById('new-category-input');
+                if (input) input.focus();
+            }, 100);
+            window.ProductModule.renderCategoryEditList();
+        }
+    },
+
+    closeCategoryManager: function() {
+        const modal = document.getElementById('category-modal-root');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    },
+
+    renderCategoryEditList: function() {
+        const container = document.getElementById('category-edit-list');
+        if (!container) return;
+
+        container.innerHTML = window.categories.map((category, index) => `
+            <div class="group flex items-center justify-between p-4 bg-slate-50 hover:bg-white hover:shadow-md rounded-2xl mb-2 transition-all">
+                <span class="font-bold text-slate-700">${category.name}</span>
+                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="window.ProductModule.editCategory(${index})" class="p-2 text-teal-600 hover:bg-teal-50 rounded-lg">
+                        <i class="ph-bold ph-pencil-simple"></i>
+                    </button>
+                    <button onclick="window.ProductModule.deleteCategory(${index})" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg">
+                        <i class="ph-bold ph-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        console.log('当前类别数据:', window.categories);
+    },
+
+    addCategory: function() {
+        const input = document.getElementById('new-category-input');
+        if (!input || !input.value.trim()) {
+            return;
+        }
+
+        const newCategory = {
+            name: input.value.trim(),
+            subcategories: []
+        };
+
+        window.categories.push(newCategory);
+        input.value = '';
+        window.ProductModule.renderCategoryEditList();
+        window.refreshCategoryFilter();
+    },
+
+    editCategory: function(index) {
+        const category = window.categories[index];
+        if (category) {
+            const newName = prompt('编辑类别名称:', category.name);
+            if (newName && newName.trim()) {
+                category.name = newName.trim();
+                window.ProductModule.renderCategoryEditList();
+                window.refreshCategoryFilter();
+            }
+        }
+    },
+
+    deleteCategory: function(index) {
+        pendingDeleteId = index;
+        const confirmModal = document.getElementById('category-delete-confirm');
+        if (confirmModal) {
+            confirmModal.classList.remove('hidden');
+        }
+    },
+
+    hideDeleteConfirm: function() {
+        const confirmModal = document.getElementById('category-delete-confirm');
+        if (confirmModal) {
+            confirmModal.classList.add('hidden');
+        }
+        pendingDeleteId = null;
+    },
+
+    confirmDelete: function() {
+        if (pendingDeleteId !== null) {
+            window.categories.splice(pendingDeleteId, 1);
+            window.ProductModule.renderCategoryEditList();
+            window.refreshCategoryFilter();
+            window.ProductModule.hideDeleteConfirm();
+        }
+    }
+};
+
+window.refreshCategoryFilter = function() {
+    if (typeof window.initCategoryOptions === 'function') {
+        window.initCategoryOptions();
+    }
+};
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('#category-filter') && 
         !e.target.closest('#supplier-filter') && 
