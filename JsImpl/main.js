@@ -1216,6 +1216,47 @@ window.categories = [
     { name: '户外照明', subcategories: ['装饰灯具', '实用灯具'] },
     { name: '户外装备', subcategories: ['露营用品'] }
 ];
+
+window.TM_MOCK_WAREHOUSES = [
+    { id: 1, name: '主仓库', location: '深圳市宝安区福永街道' },
+    { id: 2, name: '备用仓库', location: '深圳市龙岗区平湖街道' }
+];
+
+window.TM_MOCK_WAREHOUSE_STOCKS = {
+    1: [
+        { id: 1, name: '金色镂空户外灯具 (V3)', sku: 'G-882101', price: 12.50, qty: 1240, boxes: 20, packs: 40 },
+        { id: 2, name: '多功能露营折叠桌', sku: 'CP-T2-04', price: 48.00, qty: 42, boxes: 1, packs: 2 },
+        { id: 3, name: '便携无叶挂脖扇 (V2)', sku: 'FAN-002', price: 18.90, qty: 380, boxes: 6, packs: 20 },
+        { id: 4, name: '太阳能庭院灯', sku: 'SOLAR-001', price: 35.00, qty: 1680, boxes: 28, packs: 0 },
+        { id: 5, name: '野营帐篷4人款', sku: 'TENT-4', price: 89.00, qty: 210, boxes: 3, packs: 30 }
+    ],
+    2: [
+        { id: 1, name: '金色镂空户外灯具 (V3)', sku: 'G-882101', price: 12.50, qty: 560, boxes: 9, packs: 20 },
+        { id: 2, name: '多功能露营折叠桌', sku: 'CP-T2-04', price: 48.00, qty: 180, boxes: 3, packs: 0 },
+        { id: 3, name: '便携无叶挂脖扇 (V2)', sku: 'FAN-002', price: 18.90, qty: 950, boxes: 15, packs: 50 }
+    ]
+};
+
+window.formatStock = function(qty, boxes, packs) {
+    if (boxes && packs) {
+        return boxes + '箱 ' + packs + '包';
+    } else if (boxes) {
+        return boxes + '箱';
+    } else if (packs) {
+        return packs + '包';
+    }
+    return qty + '件';
+};
+
+if (!window.TM_UI) {
+    window.TM_UI = {};
+}
+if (!window.TM_UI.toast) {
+    window.TM_UI.toast = function(msg) {
+        alert(msg);
+    };
+}
+
 window.currentProduct = null;
 
 // ============== 全局暴露函数 ==============
@@ -1750,6 +1791,10 @@ window.closeCategoryModal = function() {
 let pendingDeleteId = null;
 
 window.ProductModule = {
+    currentSourceWarehouseId: null,
+    currentTransferType: 'same',
+    rowIdCounter: 0,
+    
     openCategoryManager: function() {
         const modal = document.getElementById('category-modal-root');
         if (modal) {
@@ -1842,6 +1887,251 @@ window.ProductModule = {
             window.refreshCategoryFilter();
             window.ProductModule.hideDeleteConfirm();
         }
+    },
+
+    openTransferModal: function(warehouseId) {
+        const modal = document.getElementById('warehouse-transfer-modal');
+        if (!modal) return;
+        
+        this.currentSourceWarehouseId = warehouseId;
+        this.currentTransferType = 'same';
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        const sourceWarehouse = window.TM_MOCK_WAREHOUSES.find(w => w.id === warehouseId);
+        const titleEl = document.getElementById('transfer-modal-title');
+        if (titleEl && sourceWarehouse) {
+            titleEl.innerText = `从 ${sourceWarehouse.name} 调拨`;
+        }
+        
+        const targetSelect = document.getElementById('target-warehouse-select');
+        if (targetSelect) {
+            targetSelect.innerHTML = '<option value="">请选择目标仓库</option>' + 
+                window.TM_MOCK_WAREHOUSES
+                    .filter(w => w.id !== warehouseId)
+                    .map(w => `<option value="${w.id}">${w.name}</option>`)
+                    .join('');
+        }
+        
+        const diffPriceCheckbox = document.getElementById('diff-price-checkbox');
+        if (diffPriceCheckbox) {
+            diffPriceCheckbox.checked = false;
+        }
+        
+        this.renderProductList(warehouseId);
+        this.switchTransferType(false);
+        this.calculateGrandTotal();
+    },
+    
+    closeTransferModal: function() {
+        const modal = document.getElementById('warehouse-transfer-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        this.currentSourceWarehouseId = null;
+        this.currentTransferType = 'same';
+    },
+    
+    switchTransferType: function(isDiffPrice) {
+        if (isDiffPrice) {
+            this.currentTransferType = 'diff';
+        } else {
+            this.currentTransferType = 'same';
+        }
+        
+        const sameBtn = document.getElementById('same-price-btn');
+        const diffBtn = document.getElementById('diff-price-btn');
+        
+        if (sameBtn) {
+            if (!isDiffPrice) {
+                sameBtn.classList.add('bg-brand-500', 'text-white');
+                sameBtn.classList.remove('bg-slate-100', 'text-slate-700');
+            } else {
+                sameBtn.classList.remove('bg-brand-500', 'text-white');
+                sameBtn.classList.add('bg-slate-100', 'text-slate-700');
+            }
+        }
+        
+        if (diffBtn) {
+            if (isDiffPrice) {
+                diffBtn.classList.add('bg-brand-500', 'text-white');
+                diffBtn.classList.remove('bg-slate-100', 'text-slate-700');
+            } else {
+                diffBtn.classList.remove('bg-brand-500', 'text-white');
+                diffBtn.classList.add('bg-slate-100', 'text-slate-700');
+            }
+        }
+        
+        const priceInputs = document.querySelectorAll('.price-input');
+        priceInputs.forEach(input => {
+            input.disabled = !isDiffPrice;
+        });
+        
+        this.calculateGrandTotal();
+    },
+    
+    renderProductList: function(warehouseId) {
+        const tbody = document.getElementById('transfer-product-list');
+        if (!tbody) return;
+        
+        this.rowIdCounter = 0;
+        tbody.innerHTML = '';
+    },
+    
+    addProductRow: function() {
+        this.rowIdCounter++;
+        const rowId = 'row-' + this.rowIdCounter;
+        
+        const products = window.TM_MOCK_WAREHOUSE_STOCKS[this.currentSourceWarehouseId] || [];
+        
+        const productOptions = products.map(product => 
+            `<option value="${product.id}">${product.name}</option>`
+        ).join('');
+        
+        const newRow = document.createElement('tr');
+        newRow.id = rowId;
+        newRow.className = 'border-b border-slate-100';
+        newRow.innerHTML = `
+            <td class="px-4 py-3">
+                <select onchange="window.ProductModule.handleProductSelect('${rowId}', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded text-sm">
+                    <option value="">请选择产品</option>
+                    ${productOptions}
+                </select>
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" 
+                       class="price-input w-24 px-2 py-1 border border-slate-200 rounded text-sm"
+                       value="0"
+                       disabled
+                       oninput="window.ProductModule.calculateRowTotal(this)">
+            </td>
+            <td class="px-4 py-3">
+                <input type="number" 
+                       class="qty-input w-24 px-2 py-1 border border-slate-200 rounded text-sm"
+                       value="1"
+                       oninput="window.ProductModule.calculateRowTotal(this)">
+            </td>
+            <td class="px-4 py-3 text-right font-mono font-bold text-sm row-total">
+                0.00
+            </td>
+            <td class="px-4 py-3">
+                <button onclick="window.ProductModule.removeProductRow('${rowId}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg">
+                    <i class="ph-bold ph-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        document.getElementById('transfer-product-list').appendChild(newRow);
+    },
+    
+    handleProductSelect: function(rowId, productId) {
+        const products = window.TM_MOCK_WAREHOUSE_STOCKS[this.currentSourceWarehouseId] || [];
+        const product = products.find(p => p.id == productId);
+        
+        if (!product) return;
+        
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        
+        const priceInput = row.querySelector('.price-input');
+        const qtyInput = row.querySelector('.qty-input');
+        const totalEl = row.querySelector('.row-total');
+        
+        if (priceInput) {
+            priceInput.value = product.price.toFixed(2);
+        }
+        
+        if (qtyInput) {
+            qtyInput.value = 1;
+        }
+        
+        if (totalEl) {
+            totalEl.innerText = (product.price * 1).toFixed(2);
+        }
+        
+        this.calculateGrandTotal();
+    },
+    
+    removeProductRow: function(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.remove();
+            this.calculateGrandTotal();
+        }
+    },
+    
+    calculateRowTotal: function(inputElement) {
+        const row = inputElement.closest('tr');
+        if (!row) return;
+        
+        const priceInput = row.querySelector('.price-input');
+        const qtyInput = row.querySelector('.qty-input');
+        
+        const price = parseFloat(priceInput?.value) || 0;
+        const qty = parseFloat(qtyInput?.value) || 0;
+        const total = price * qty;
+        
+        const totalEl = row.querySelector('.row-total');
+        if (totalEl) {
+            totalEl.innerText = total.toFixed(2);
+        }
+        
+        this.calculateGrandTotal();
+    },
+    
+    calculateGrandTotal: function() {
+        const grandTotalEl = document.getElementById('transfer-total-value');
+        if (!grandTotalEl) return;
+        
+        let grandTotal = 0;
+        const rowTotals = document.querySelectorAll('.row-total');
+        rowTotals.forEach(el => {
+            const value = parseFloat(el.innerText.replace('$', '')) || 0;
+            grandTotal += value;
+        });
+        
+        grandTotalEl.innerText = grandTotal.toFixed(2);
+    },
+    
+    confirmTransfer: function() {
+        const targetSelect = document.getElementById('target-warehouse-select');
+        if (!targetSelect || !targetSelect.value) {
+            alert('请选择目标仓库');
+            return;
+        }
+        
+        const products = [];
+        const rows = document.querySelectorAll('#transfer-product-list tr');
+        rows.forEach(row => {
+            const priceInput = row.querySelector('.price-input');
+            if (priceInput) {
+                products.push({
+                    id: parseInt(priceInput.getAttribute('data-product-id')),
+                    price: parseFloat(priceInput.value) || 0,
+                    qty: parseInt(priceInput.getAttribute('data-qty')) || 0
+                });
+            }
+        });
+        
+        const transferData = {
+            sourceWarehouseId: this.currentSourceWarehouseId,
+            targetWarehouseId: parseInt(targetSelect.value),
+            transferType: this.currentTransferType,
+            products: products
+        };
+        
+        console.log('调拨数据包:', JSON.stringify(transferData, null, 2));
+        
+        this.refreshData();
+        if (window.TM_UI && window.TM_UI.toast) {
+            window.TM_UI.toast('调拨成功！');
+        }
+        this.closeTransferModal();
+    },
+    
+    refreshData: function() {
+        console.log('刷新数据...');
     }
 };
 
