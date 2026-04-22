@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TradeMind 商贸智脑 - 智能经营一体化平台</title>
 
-    <link rel="stylesheet" href="./CSS/main.css">
-    <link rel="stylesheet" href="./MobileAdapt/mobile.css">
+    <link rel="stylesheet" href="./CSS/main.css?v=20260422-crm-layout">
+    <link rel="stylesheet" href="./MobileAdapt/mobile.css?v=20260422-crm-layout">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,8 +15,8 @@
         }
     </script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="./JsImpl/main.js"></script>
-    <script src="./JsImpl/product-center.js"></script>
+    <script src="./JsImpl/main.js?v=20260422-crm-layout"></script>
+    <script src="./JsImpl/product-center.js?v=20260422-crm-layout"></script>
     <script>
         console.log('=== 页面脚本标签加载检查');
         console.log('window.toggleDropdown 是否存在:', typeof window.toggleDropdown);
@@ -85,47 +85,57 @@
             <div class="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar space-y-6">
                 <!-- 订阅等级对比 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- 试用版卡片 -->
-                    <div class="p-5 rounded-[2rem] border border-slate-200 bg-slate-50 relative flex flex-col justify-between">
+                    <!-- 启航会员 -->
+                    <div class="p-5 rounded-[2rem] border border-slate-200 bg-slate-50 relative overflow-hidden flex flex-col justify-between">
                         <div>
-                            <span class="absolute top-4 right-8 text-[9px] font-black text-slate-300 uppercase tracking-widest">Current Plan</span>
-                            <h4 class="text-base font-bold text-slate-600">基础试用版</h4>
+                            <div id="plan-launch-badge" class="absolute -right-12 top-6 rotate-45 discount-ribbon text-white text-[10px] font-black py-1.5 px-14 shadow-lg uppercase tracking-tighter">
+                                首发折扣
+                            </div>
+                            <h4 class="text-base font-bold text-slate-700">启航会员</h4>
                             <div class="mt-4 space-y-2 text-[11px] text-slate-500 border-l-2 border-slate-200 pl-3">
-                                <p class="flex items-center gap-2"><i class="ph ph-user"></i> 1位 管理员账号</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-package"></i> 100个 产品SKU限制</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-users-three"></i> 100个 客户档案上限</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-warehouse"></i> 10个 供应商配额</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-user"></i> 1个账号</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-package"></i> 200个产品数量管理</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-users-three"></i> 200个客户管理</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-warehouse"></i> 20个供应商管理</p>
                             </div>
                         </div>
-                        <div class="mt-6 text-2xl font-mono font-black text-slate-400">¥ 0</div>
+                        <div class="mt-6 pt-4 border-t border-slate-200">
+                            <p class="text-[10px] text-slate-300 line-through font-bold italic">原价 <span id="plan-launch-origin">¥2388</span></p>
+                            <div class="flex items-end gap-1">
+                                <span id="plan-launch-price" class="text-4xl font-mono font-black text-slate-700 tracking-tighter">¥888</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase mb-1">/ Year</span>
+                            </div>
+                            <p id="plan-launch-discount" class="mt-1 text-[10px] font-black text-brand-600 uppercase tracking-widest">首发折扣计算中...</p>
+                        </div>
                     </div>
 
-                    <!-- 普通会员卡片：凸显 888 与 3.7折 -->
+                    <!-- 优享会员 -->
                     <div class="p-6 rounded-[2rem] border-4 border-[#14B8A6] bg-white shadow-2xl relative overflow-hidden group flex flex-col justify-between transition-all hover:-translate-y-1">
-                        <!-- 3.7折 飘带 -->
-                        <div class="absolute -right-14 top-8 rotate-45 discount-ribbon text-white text-[11px] font-black py-2 px-16 shadow-lg uppercase tracking-tighter">
-                            首发 3.7 折
+                        <!-- 折扣飘带 -->
+                        <div id="plan-plus-discount-ribbon" class="absolute -right-14 top-8 rotate-45 discount-ribbon text-white text-[11px] font-black py-2 px-16 shadow-lg uppercase tracking-tighter">
+                            首发折扣计算中
                         </div>
 
                         <div>
                             <p class="text-[9px] font-black text-[#14B8A6] uppercase tracking-widest mb-1">Recommended</p>
-                            <h4 class="text-xl font-black text-slate-900 flex items-center gap-2">普通会员订阅 <i class="ph ph-seal-check-fill text-[#14B8A6]"></i></h4>
+                            <h4 class="text-xl font-black text-slate-900 flex items-center gap-2">优享会员 <i class="ph ph-seal-check-fill text-[#14B8A6]"></i></h4>
 
                             <div class="mt-4 space-y-2 text-[11px] text-slate-800 font-bold">
                                 <p class="flex items-center gap-2"><i class="ph ph-users-four text-[#14B8A6] text-base"></i> 5个 不同角色子账号</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-package text-[#14B8A6] text-base"></i> 1000个 产品数量管理</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-address-book text-[#14B8A6] text-base"></i> 1000个 客户管理权限</p>
-                                <p class="flex items-center gap-2"><i class="ph ph-warehouse text-[#14B8A6] text-base"></i> 100个 供应商管理</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-package text-[#14B8A6] text-base"></i> 500个 产品数量管理</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-address-book text-[#14B8A6] text-base"></i> 500个 客户管理</p>
+                                <p class="flex items-center gap-2"><i class="ph ph-warehouse text-[#14B8A6] text-base"></i> 50个 供应商管理</p>
                             </div>
                         </div>
 
                         <div class="mt-6 pt-4 border-t border-slate-50 flex items-end justify-between">
                             <div>
-                                <p class="text-[10px] text-slate-300 line-through font-bold italic">原价 ¥2388</p>
+                                <p class="text-[10px] text-slate-300 line-through font-bold italic">原价 <span id="plan-plus-origin">¥5888</span></p>
                                 <div class="flex items-baseline gap-1">
-                                    <span class="text-5xl font-mono font-black text-[#14B8A6] tracking-tighter">¥888</span>
+                                    <span id="plan-plus-price" class="text-5xl font-mono font-black text-[#14B8A6] tracking-tighter">¥1288</span>
                                     <span class="text-[10px] font-bold text-slate-400 uppercase">/ Year</span>
                                 </div>
+                                <p id="plan-plus-discount" class="text-[10px] font-black text-[#14B8A6] uppercase tracking-widest mt-1">首发折扣计算中...</p>
                             </div>
                             <button class="mb-1 px-8 py-3 bg-[#14B8A6] text-white rounded-xl font-black text-xs shadow-xl shadow-[#14B8A6]/30 hover:bg-[#0D9488] transition-all active:scale-95">立即升级</button>
                         </div>
@@ -137,7 +147,9 @@
                     <div class="absolute -right-8 -top-8 opacity-10 rotate-12"><i class="ph ph-medal text-[10rem] text-amber-600"></i></div>
                     <div class="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-white/50 rounded-full flex items-center justify-center text-amber-700 shrink-0 shadow-sm"><i class="ph ph-users-plus text-2xl"></i></div>
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-[0_8px_24px_rgba(30,64,175,0.35)] bg-gradient-to-br from-indigo-600 via-blue-500 to-cyan-400 text-white">
+                                <i class="ph ph-rocket-launch text-2xl"></i>
+                            </div>
                             <div class="text-left">
                                 <h3 class="text-base font-black text-amber-900 flex items-center gap-2">巨猿推荐官计划 <i class="ph ph-sparkle-fill text-amber-500 text-xs"></i></h3>
                                 <p class="text-[11px] text-amber-800 leading-tight">每成功邀请一位用户订阅，立返 <span class="font-black text-amber-900 underline decoration-amber-400">¥ 100</span> 现金奖励。</p>
@@ -200,20 +212,20 @@
 
                         <!-- Slogan -->
                         <h4 class="text-2xl font-bold leading-tight mb-8 relative z-10">
-                            重塑商贸效率<br>
-                            <span style="color: #99f6e4;">AI 驱动经营决策</span>
+                            推荐好友开通 TradeMind<br>
+                            <span style="color: #99f6e4;">一起提升订单与回款效率</span>
                         </h4>
 
-                        <!-- 功能列表 -->
+                        <!-- 核心卖点 -->
                         <div class="space-y-3 mb-auto relative z-10">
                             <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 多模态订单自动提取
+                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 3分钟完成提单录入，减少人工错误
                             </div>
                             <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 数字化供应链智能预警
+                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 智能库存预警，降低缺货与积压风险
                             </div>
                             <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 全量多租户经营看板
+                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 多维经营看板，决策更快更稳
                             </div>
                         </div>
 
@@ -234,7 +246,7 @@
 
                 <div class="mt-6 text-center">
                     <p class="text-[11px] text-slate-400 leading-relaxed">
-                        邀请好友注册，双方立享 <span class="text-teal-600 font-bold">15天 专业版</span> 奖励
+                        邀请好友开通，双方立享 <span class="text-teal-600 font-bold">15天 专业版</span> + <span class="text-amber-600 font-bold">推荐返现奖励</span>
                     </p>
 
                     <!-- 生成并保存海报按钮 -->

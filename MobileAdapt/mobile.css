@@ -303,3 +303,109 @@
         white-space: nowrap;
     }
 }
+
+/* ================= 产品中心移动端优化（对齐网页端信息层级） ================= */
+@media (max-width: 768px) {
+    /* 移动端仅展示卡片，避免和桌面表格重复 */
+    #existingProdTable {
+        display: none !important;
+    }
+
+    #mobile-product-cards {
+        display: block !important;
+        padding-top: 0.25rem;
+    }
+
+    /* 顶部工具条：标题、搜索、动作区分层更清晰 */
+    #view-supply .bg-white.rounded-2xl.border.border-slate-200.shadow-sm.overflow-hidden > .px-6.py-4.border-b.border-slate-50 {
+        padding: 0.875rem 1rem !important;
+        gap: 0.75rem !important;
+    }
+
+    #view-supply .bg-white.rounded-2xl.border.border-slate-200.shadow-sm.overflow-hidden > .px-6.py-4.border-b.border-slate-50 h3 {
+        width: 100%;
+        text-align: left;
+    }
+
+    #inventorySearch {
+        height: 2.5rem;
+        font-size: 0.75rem;
+    }
+
+    /* 筛选区：横向滑动 + 新增按钮固定可见 */
+    #view-supply .px-6.py-4.border-b.border-slate-50.flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.gap-4.bg-white {
+        padding: 0.875rem 1rem !important;
+        gap: 0.625rem !important;
+    }
+
+    #view-supply #category-filter button,
+    #view-supply #supplier-filter button,
+    #view-supply #stock-filter button {
+        font-size: 0.75rem;
+        padding: 0.55rem 0.85rem;
+        border-radius: 0.85rem;
+    }
+
+    #new-product-btn {
+        width: 100%;
+        justify-content: center;
+        border-radius: 0.9rem;
+    }
+
+    /* 卡片信息更贴近桌面端阅读体验 */
+    #mobile-product-cards .product-card {
+        border-radius: 1rem;
+    }
+
+    #mobile-product-cards .product-card .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    #mobile-product-cards .product-card .grid.grid-cols-3 > div {
+        min-height: 3.15rem;
+    }
+
+    /* 紧凑行式产品布局：字体和按钮同比缩小 */
+    .mobile-product-row {
+        border-radius: 0.8rem !important;
+        padding: 0.58rem 0.7rem !important;
+    }
+
+    .mobile-product-row .w-9 {
+        width: 2.1rem !important;
+        height: 2.1rem !important;
+    }
+
+    .mobile-product-row i.text-base {
+        font-size: 0.9rem !important;
+    }
+
+    .mobile-product-row p.text-\[12px\] {
+        font-size: 0.73rem !important;
+    }
+
+    .mobile-product-row p.text-\[10px\],
+    .mobile-product-row span.text-\[11px\] {
+        font-size: 0.62rem !important;
+    }
+
+    .mobile-mini-btn {
+        width: 1.4rem;
+        height: 1.4rem;
+        border-radius: 0.4rem;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 0.62rem;
+        font-weight: 700;
+        line-height: 1.4rem;
+        text-align: center;
+    }
+
+    .mobile-mini-btn.delete {
+        color: #e11d48;
+        background: #fff1f2;
+    }
+}

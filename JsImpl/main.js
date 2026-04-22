@@ -11,10 +11,16 @@ function loadDashboard() {
 }
 
 function loadSmartOps() {
-    fetch('./modules/SmartOps/SmartOps.html')
+    const timestamp = new Date().getTime();
+    fetch(`./modules/SmartOps/SmartOps.html?t=${timestamp}`)
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-biz').innerHTML = data;
+            setTimeout(() => {
+                if (typeof window.initBizAccountManager === 'function') {
+                    window.initBizAccountManager();
+                }
+            }, 0);
         })
         .catch(error => {
             console.error('Error loading SmartOps:', error);
@@ -22,10 +28,14 @@ function loadSmartOps() {
 }
 
 function loadCRM() {
-    fetch('./modules/crm/crm.html')
+    const timestamp = new Date().getTime();
+    fetch(`./modules/crm/crm.html?t=${timestamp}`, { cache: 'no-store' })
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-crm').innerHTML = data;
+            setTimeout(() => {
+                initCrmAlphabetIndex();
+            }, 0);
         })
         .catch(error => {
             console.error('Error loading CRM:', error);
@@ -107,8 +117,37 @@ function toggleSidebar() {
 }
 
 // --- <用户订阅>语音逻辑 (修复版) ---
+function computeLaunchDiscountLabel(originPrice, launchPrice) {
+    if (!originPrice || !launchPrice || originPrice <= 0) return '首发优惠';
+    const discount = (launchPrice / originPrice * 10).toFixed(1);
+    const savePercent = Math.round((1 - launchPrice / originPrice) * 100);
+    return `首发 ${discount} 折 · 立省 ${savePercent}%`;
+}
+
+function initMemberPricing() {
+    const launch = { origin: 2388, price: 888 };
+    const plus = { origin: 5888, price: 1288 };
+
+    const launchDiscount = computeLaunchDiscountLabel(launch.origin, launch.price);
+    const plusDiscount = computeLaunchDiscountLabel(plus.origin, plus.price);
+
+    const launchDiscountEl = document.getElementById('plan-launch-discount');
+    const plusDiscountEl = document.getElementById('plan-plus-discount');
+    const plusRibbonEl = document.getElementById('plan-plus-discount-ribbon');
+    const launchBadgeEl = document.getElementById('plan-launch-badge');
+
+    if (launchDiscountEl) launchDiscountEl.innerText = launchDiscount;
+    if (plusDiscountEl) plusDiscountEl.innerText = plusDiscount;
+    if (plusRibbonEl) plusRibbonEl.innerText = plusDiscount.split('·')[0].trim();
+    if (launchBadgeEl) launchBadgeEl.innerText = launchDiscount.split('·')[0].trim();
+}
+
 // 会员弹窗控制
-function openMemberModal() { document.getElementById('member-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+function openMemberModal() {
+    initMemberPricing();
+    document.getElementById('member-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
 function closeMemberModal() { document.getElementById('member-modal').classList.add('hidden'); document.body.style.overflow = ''; }
 
 // 品牌海报控制
@@ -137,7 +176,8 @@ async function downloadPoster() {
 
         // 转为图片并下载
         const link = document.createElement('a');
-        link.download = `TradeMind-Invite-${USER_REF_CODE}.png`;
+        const refCode = (document.getElementById('poster-ref-code')?.innerText || 'TM-REF').replace(/\s+/g, '');
+        link.download = `TradeMind-Invite-${refCode}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     } catch (err) {
@@ -663,6 +703,57 @@ function switchReport(type) {
 }
 
 // --- 客户CRM交互逻辑 ---
+const CRM_ALPHABETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+function initCrmAlphabetIndex() {
+    const indexContainer = document.getElementById('crm-letter-index');
+    const listContainer = document.getElementById('customer-list-container');
+    if (!indexContainer || !listContainer) return;
+
+    indexContainer.innerHTML = CRM_ALPHABETS.map(letter =>
+        `<button type="button" class="crm-letter-btn block w-5 h-4 text-[9px] font-black text-slate-400 rounded-md transition-colors" data-letter="${letter}" onclick="scrollCrmToLetter('${letter}')">${letter}</button>`
+    ).join('');
+
+    const cards = listContainer.querySelectorAll('.customer-card');
+    cards.forEach(card => {
+        if (card.dataset.initial) return;
+        const nameEl = card.querySelector('.card-name');
+        const nameText = nameEl ? nameEl.textContent.trim() : '';
+        const initial = nameText ? nameText.charAt(0).toUpperCase() : '';
+        if (initial && /^[A-Z]$/.test(initial)) {
+            card.dataset.initial = initial;
+        }
+    });
+
+    setActiveCrmLetter('A');
+}
+
+function setActiveCrmLetter(letter) {
+    const buttons = document.querySelectorAll('#crm-letter-index .crm-letter-btn');
+    buttons.forEach(btn => {
+        const isActive = btn.dataset.letter === letter;
+        btn.classList.toggle('bg-brand-500', isActive);
+        btn.classList.toggle('text-white', isActive);
+        btn.classList.toggle('shadow-sm', isActive);
+        btn.classList.toggle('text-slate-400', !isActive);
+    });
+}
+
+function scrollCrmToLetter(letter) {
+    const listContainer = document.getElementById('customer-list-container');
+    if (!listContainer) return;
+    setActiveCrmLetter(letter);
+
+    const target = listContainer.querySelector(`.customer-card[data-initial="${letter}"]`);
+    if (!target) return;
+
+    const top = target.offsetTop - listContainer.offsetTop - 8;
+    listContainer.scrollTo({
+        top: Math.max(top, 0),
+        behavior: 'smooth'
+    });
+}
+
 /**
 * CRM 手机端详情显示逻辑
 */
@@ -705,12 +796,111 @@ window.switchTab = function(tabId) {
     }
 };
 
-function switchCustomerDetail(name, info) {
+function switchCustomerDetail(name, info, phone) {
     const detailName = document.getElementById('crm-detail-name');
     if (detailName) {
         detailName.innerText = name;
     }
+    updateCrmPhoneCard(name, phone);
+    hideCrmPhoneCard();
     showCrmDetail(name);
+}
+
+function updateCrmPhoneCard(name, phone) {
+    const safeName = name || 'Ahmed Al-Fayed';
+    const safePhone = phone || '+971 50 123 4567';
+    const customerName = document.getElementById('crm-phone-customer-name');
+    const phoneText = document.getElementById('crm-phone-number');
+    if (customerName) customerName.innerText = safeName;
+    if (phoneText) phoneText.innerText = safePhone;
+}
+
+function toggleCrmPhoneCard(event) {
+    if (event) event.stopPropagation();
+    const card = document.getElementById('crm-phone-card');
+    if (!card) return;
+    card.classList.toggle('hidden');
+}
+
+function hideCrmPhoneCard() {
+    const card = document.getElementById('crm-phone-card');
+    if (!card) return;
+    card.classList.add('hidden');
+}
+
+function copyCrmPhone(event) {
+    if (event) event.stopPropagation();
+    const phoneText = document.getElementById('crm-phone-number');
+    if (!phoneText) return;
+    const phone = phoneText.innerText || '';
+    navigator.clipboard.writeText(phone).then(() => {
+        if (typeof showToast === 'function') showToast('电话号码已复制');
+    }).catch(() => {
+        if (typeof showToast === 'function') showToast('复制失败，请手动复制');
+    });
+}
+
+document.addEventListener('click', function(event) {
+    const card = document.getElementById('crm-phone-card');
+    if (!card || card.classList.contains('hidden')) return;
+    if (!card.contains(event.target)) {
+        hideCrmPhoneCard();
+    }
+});
+
+// CRM AI 建议弹窗
+function openCrmAiModal() {
+    const modal = document.getElementById('crm-ai-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCrmAiModal() {
+    const modal = document.getElementById('crm-ai-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function generateCrmMarketingSuggestion() {
+    const suggestionText = document.getElementById('crm-ai-suggestion-text');
+    const suggestionBtn = document.getElementById('crm-ai-suggestion-btn');
+    if (!suggestionText || !suggestionBtn) return;
+
+    suggestionBtn.disabled = true;
+    suggestionBtn.innerText = '生成中...';
+    suggestionBtn.classList.add('opacity-70');
+
+    setTimeout(() => {
+        suggestionText.innerText = '建议优先触达“斋月备货”主题：围绕金色复古款进行组合推荐，附加 5% 早鸟优惠，并在 48 小时内二次跟进促单。';
+        suggestionBtn.disabled = false;
+        suggestionBtn.innerText = '重新生成营销建议';
+        suggestionBtn.classList.remove('opacity-70');
+    }, 650);
+}
+
+function generateCrmMarketingScript() {
+    const loading = document.getElementById('crm-ai-script-loading');
+    const result = document.getElementById('crm-ai-script-result');
+    const text = document.getElementById('crm-ai-script-text');
+    const button = document.getElementById('crm-ai-script-btn');
+    if (!loading || !result || !text || !button) return;
+
+    loading.classList.remove('hidden');
+    result.classList.add('hidden');
+    button.disabled = true;
+    button.classList.add('opacity-70');
+    button.innerText = '生成中...';
+
+    setTimeout(() => {
+        text.innerText = 'Hi Ahmed，考虑到您去年斋月档期的采购节奏，我们为您准备了 2026 金色复古灯饰新款目录。本周确认可享 5% 专属早鸟优惠，是否方便我现在发您完整款式与报价？';
+        loading.classList.add('hidden');
+        result.classList.remove('hidden');
+        button.disabled = false;
+        button.classList.remove('opacity-70');
+        button.innerText = '重新生成话术';
+    }, 1200);
 }
 
 // 3. 客户列表实时过滤
@@ -1538,42 +1728,28 @@ window.renderMobileCards = function(productList) {
     }
     
     container.innerHTML = productList.map(product => `
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 product-card cursor-pointer hover:shadow-md transition-shadow" onclick="window.openProductDetail(${product.id})">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                    <i class="ph ph-${product.icon} text-xl"></i>
+        <div class="mobile-product-row bg-white border border-slate-200 rounded-xl shadow-sm px-3 py-2.5 cursor-pointer hover:shadow-md transition-shadow" onclick="window.openProductDetail(${product.id})">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                    <i class="ph ph-${product.icon} text-base"></i>
                 </div>
-                <div class="flex-1">
-                    <p class="font-bold text-slate-800">${product.name}</p>
-                    <p class="text-[10px] text-slate-400 font-mono uppercase mt-1">SKU: ${product.sku}</p>
-                    <div class="mt-2 grid grid-cols-2 gap-2">
-                        <div>
-                            <p class="text-[10px] text-slate-400">销售价</p>
-                            <p class="font-mono font-bold text-slate-600">$${product.price.toFixed(2)}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] text-slate-400">进货价</p>
-                            <p class="font-mono font-bold text-brand-600">$${product.purchasePrice.toFixed(2)}</p>
-                        </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-[12px] font-bold text-slate-800 truncate">${product.name}</p>
+                        <span class="text-[11px] font-mono font-bold ${window.getStockColor(product.stockStatus)} shrink-0">${product.stock.toLocaleString()}</span>
                     </div>
-                    <div class="mt-2 flex justify-between items-center">
-                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold">${product.region}</span>
-                        <p class="font-mono font-bold ${window.getStockColor(product.stockStatus)}">
-                            ${product.stock.toLocaleString()} Pcs
-                        </p>
+                    <div class="flex items-center justify-between gap-2 mt-0.5">
+                        <p class="text-[10px] text-slate-400 font-mono truncate">SKU: ${product.sku}</p>
+                        <p class="text-[10px] text-slate-500 shrink-0">$${product.price.toFixed(2)} / $${product.purchasePrice.toFixed(2)}</p>
                     </div>
-                    <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                    <div class="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
                         <div class="w-[${window.getStockPercentage(product.stock)}%] ${window.getStockBgColor(product.stockStatus)} h-full ${product.stockStatus === '缺货' ? 'animate-pulse' : ''}"></div>
                     </div>
                 </div>
-            </div>
-            <div class="mt-4 flex justify-end gap-2">
-                <button onclick="event.stopPropagation(); window.openProductDetail(${product.id})" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-brand-600">
-                    <i class="ph ph-pencil-simple-line text-lg"></i>
-                </button>
-                <button onclick="event.stopPropagation(); window.confirmDeleteProduct('${product.name}')" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-risk-high">
-                    <i class="ph ph-trash text-lg"></i>
-                </button>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="event.stopPropagation(); window.openProductDetail(${product.id})" class="mobile-mini-btn">编</button>
+                    <button onclick="event.stopPropagation(); window.confirmDeleteProduct('${product.name}')" class="mobile-mini-btn delete">删</button>
+                </div>
             </div>
         </div>
     `).join('');
@@ -1676,6 +1852,33 @@ window.initProductCenter = function() {
     window.initFilterOptions();
 };
 
+window.openNewProductModal = function() {
+    window.currentProduct = null;
+    const modal = document.getElementById('product-detail-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('detail-title');
+    const skuEl = document.getElementById('detail-sku');
+    const nameEl = document.getElementById('detail-product-name');
+    const skuInputEl = document.getElementById('detail-product-sku-input');
+    const priceEl = document.getElementById('detail-product-price');
+    const stockEl = document.getElementById('detail-product-stock');
+    const supplierEl = document.getElementById('detail-product-supplier');
+    const warningStockEl = document.getElementById('detail-product-warning-stock');
+
+    const newSku = `SKU-${Date.now().toString().slice(-6)}`;
+    if (titleEl) titleEl.textContent = '新增产品';
+    if (skuEl) skuEl.textContent = 'SKU: ' + newSku;
+    if (nameEl) nameEl.value = '';
+    if (skuInputEl) skuInputEl.value = newSku;
+    if (priceEl) priceEl.value = '0';
+    if (stockEl) stockEl.value = '0';
+    if (warningStockEl) warningStockEl.value = '100';
+    if (supplierEl && supplierEl.options.length > 0) supplierEl.selectedIndex = 0;
+
+    modal.classList.remove('hidden');
+};
+
 window.openProductDetail = function(productId) {
     const product = window.products.find(p => p.id === productId || p.name === productId);
     if (product) {
@@ -1684,8 +1887,23 @@ window.openProductDetail = function(productId) {
         if (modal) {
             const titleEl = document.getElementById('detail-title');
             const skuEl = document.getElementById('detail-sku');
+            const nameEl = document.getElementById('detail-product-name');
+            const skuInputEl = document.getElementById('detail-product-sku-input');
+            const priceEl = document.getElementById('detail-product-price');
+            const stockEl = document.getElementById('detail-product-stock');
+            const supplierEl = document.getElementById('detail-product-supplier');
+            const warningStockEl = document.getElementById('detail-product-warning-stock');
             if (titleEl) titleEl.textContent = product.name;
             if (skuEl) skuEl.textContent = 'SKU: ' + product.sku;
+            if (nameEl) nameEl.value = product.name || '';
+            if (skuInputEl) skuInputEl.value = product.sku || '';
+            if (priceEl) priceEl.value = product.price || 0;
+            if (stockEl) stockEl.value = product.stock || 0;
+            if (warningStockEl) warningStockEl.value = 100;
+            if (supplierEl && product.supplier) {
+                const supplierOption = Array.from(supplierEl.options).find(opt => opt.text.includes(product.supplier));
+                if (supplierOption) supplierEl.value = supplierOption.value;
+            }
             modal.classList.remove('hidden');
         }
     }
@@ -1705,7 +1923,59 @@ window.confirmDeleteProduct = function(productName) {
 };
 
 window.saveProduct = function() {
-    alert('产品信息已保存！');
+    const nameEl = document.getElementById('detail-product-name');
+    const skuInputEl = document.getElementById('detail-product-sku-input');
+    const priceEl = document.getElementById('detail-product-price');
+    const stockEl = document.getElementById('detail-product-stock');
+    const supplierEl = document.getElementById('detail-product-supplier');
+
+    if (!nameEl || !skuInputEl || !priceEl || !stockEl || !supplierEl) {
+        alert('产品信息表单未就绪，请重试。');
+        return;
+    }
+
+    const name = nameEl.value.trim();
+    const sku = skuInputEl.value.trim();
+    const price = parseFloat(priceEl.value) || 0;
+    const stock = parseInt(stockEl.value, 10) || 0;
+    const supplier = supplierEl.value.trim();
+
+    if (!name || !sku) {
+        alert('请填写产品名称与 SKU 编码。');
+        return;
+    }
+
+    const stockStatus = stock <= 50 ? '缺货' : stock <= 300 ? '预警' : '充足';
+
+    if (window.currentProduct) {
+        window.currentProduct.name = name;
+        window.currentProduct.sku = sku;
+        window.currentProduct.price = price;
+        window.currentProduct.stock = stock;
+        window.currentProduct.supplier = supplier;
+        window.currentProduct.stockStatus = stockStatus;
+        alert('产品信息已更新！');
+    } else {
+        const maxId = window.products.reduce((max, item) => Math.max(max, item.id || 0), 0);
+        window.products.unshift({
+            id: maxId + 1,
+            name: name,
+            sku: sku,
+            category1: window.categories?.[0]?.name || '产品分类',
+            category2: window.categories?.[0]?.subcategories?.[0] || '默认子类',
+            supplier: supplier,
+            region: '国内市场',
+            price: price,
+            purchasePrice: Math.max(0, +(price * 0.7).toFixed(2)),
+            stock: stock,
+            salesVolume: 0,
+            icon: 'package',
+            stockStatus: stockStatus
+        });
+        alert('新产品已新增到产品库！');
+    }
+
+    window.filterProducts();
     window.closeProductDetail();
 };
 
@@ -2279,3 +2549,373 @@ function toggleCustomerDetail(show) {
         }
     }
 }
+
+// 智能经营 - 首付款账户管理
+window.bizPaymentAccounts = window.bizPaymentAccounts || [
+    {
+        id: 1,
+        type: '支付宝账户',
+        accountName: 'TradeMind 主收款',
+        accountNo: 'pay-trademind-001',
+        holder: '杭州巨猿科技有限公司',
+        isDefaultReceive: true,
+        isDefaultPay: false
+    },
+    {
+        id: 2,
+        type: '微信账户',
+        accountName: 'TradeMind 采购付款',
+        accountNo: 'wxid_tm_pay_002',
+        holder: '杭州巨猿科技有限公司',
+        isDefaultReceive: false,
+        isDefaultPay: true
+    },
+    {
+        id: 3,
+        type: '银行卡账户',
+        accountName: '招商银行对公户',
+        accountNo: '6225 88** **** 2026',
+        holder: '杭州巨猿科技有限公司',
+        isDefaultReceive: false,
+        isDefaultPay: false
+    }
+];
+
+window.bizAccountEditId = null;
+window.bizAccountDeleteId = null;
+window.bizAccountDetailId = null;
+
+window.validateBizAccountNo = function(type, accountNo) {
+    const raw = accountNo.trim();
+    if (!raw) {
+        return { valid: false, message: '账户号不能为空。', normalized: raw };
+    }
+
+    if (type === '银行卡账户') {
+        const compact = raw.replace(/\s+/g, '');
+        if (!/^\d+$/.test(compact)) {
+            return { valid: false, message: '银行卡账户仅支持数字。', normalized: raw };
+        }
+        if (compact.length < 12 || compact.length > 24) {
+            return { valid: false, message: '银行卡号长度应为 12-24 位。', normalized: raw };
+        }
+        const grouped = compact.replace(/(\d{4})(?=\d)/g, '$1 ');
+        return { valid: true, normalized: grouped };
+    }
+
+    if (type === '支付宝账户') {
+        const ok = /^([a-zA-Z0-9_.-]{3,64}|1\d{10}|[^@\s]+@[^@\s]+\.[^@\s]+)$/.test(raw);
+        if (!ok) {
+            return { valid: false, message: '支付宝账户格式不正确，请输入手机号、邮箱或字母数字账号。', normalized: raw };
+        }
+        return { valid: true, normalized: raw };
+    }
+
+    if (type === '微信账户') {
+        const ok = /^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(raw);
+        if (!ok) {
+            return { valid: false, message: '微信账户需以字母开头，长度 6-20 位，仅支持字母数字_-.', normalized: raw };
+        }
+        return { valid: true, normalized: raw };
+    }
+
+    return { valid: true, normalized: raw };
+};
+
+window.ensureBizDefaultAccounts = function() {
+    if (!Array.isArray(window.bizPaymentAccounts) || window.bizPaymentAccounts.length === 0) {
+        return;
+    }
+
+    const receiveDefaults = window.bizPaymentAccounts.filter(item => item.isDefaultReceive);
+    if (receiveDefaults.length !== 1) {
+        const keeperId = receiveDefaults.length > 0 ? receiveDefaults[0].id : window.bizPaymentAccounts[0].id;
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultReceive: item.id === keeperId
+        }));
+    }
+
+    const payDefaults = window.bizPaymentAccounts.filter(item => item.isDefaultPay);
+    if (payDefaults.length !== 1) {
+        const keeperId = payDefaults.length > 0 ? payDefaults[0].id : window.bizPaymentAccounts[0].id;
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultPay: item.id === keeperId
+        }));
+    }
+};
+
+window.initBizAccountManager = function() {
+    window.ensureBizDefaultAccounts();
+    window.renderBizPaymentAccounts();
+};
+
+window.renderBizPaymentAccounts = function() {
+    const list = document.getElementById('biz-account-list');
+    if (!list) return;
+
+    if (window.bizPaymentAccounts.length === 0) {
+        list.innerHTML = `
+            <li class="px-4 py-8 rounded-xl border border-dashed border-slate-200 text-center">
+                <div class="flex flex-col items-center gap-2 text-slate-400">
+                    <i class="ph ph-wallet text-3xl"></i>
+                    <p class="text-xs font-bold">暂无账户，请点击右上角 + 新增</p>
+                </div>
+            </li>
+        `;
+        return;
+    }
+
+    list.innerHTML = window.bizPaymentAccounts.map(account => `
+        <li class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-slate-50/70 transition-all">
+            <div class="min-w-0">
+                <p class="text-sm font-bold text-slate-800 truncate">${account.accountName}</p>
+                <div class="flex items-center gap-1.5 mt-1">
+                    ${account.isDefaultReceive ? '<span class="px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-600 text-[9px] font-bold">收</span>' : ''}
+                    ${account.isDefaultPay ? '<span class="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[9px] font-bold">付</span>' : ''}
+                </div>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+                <button onclick="window.openBizAccountDetailModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="详情">
+                    <i class="ph ph-eye text-sm"></i>
+                </button>
+                <button onclick="window.openBizAccountModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors" title="编辑">
+                    <i class="ph ph-pencil-simple text-sm"></i>
+                </button>
+                <button onclick="window.openBizAccountDeleteModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-risk-high hover:bg-rose-50 transition-colors" title="删除">
+                    <i class="ph ph-trash text-sm"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
+};
+
+window.openBizAccountDetailModal = function(accountId) {
+    const account = window.bizPaymentAccounts.find(item => item.id === accountId);
+    if (!account) return;
+
+    window.bizAccountDetailId = accountId;
+    const modal = document.getElementById('biz-account-detail-modal');
+    if (!modal) return;
+
+    const nameEl = document.getElementById('biz-detail-name');
+    const typeEl = document.getElementById('biz-detail-type');
+    const noEl = document.getElementById('biz-detail-no');
+    const holderEl = document.getElementById('biz-detail-holder');
+    const receiveEl = document.getElementById('biz-detail-default-receive');
+    const payEl = document.getElementById('biz-detail-default-pay');
+
+    if (nameEl) nameEl.innerText = account.accountName;
+    if (typeEl) typeEl.innerText = account.type;
+    if (noEl) noEl.innerText = account.accountNo;
+    if (holderEl) holderEl.innerText = account.holder;
+    if (receiveEl) receiveEl.classList.toggle('hidden', !account.isDefaultReceive);
+    if (payEl) payEl.classList.toggle('hidden', !account.isDefaultPay);
+
+    modal.classList.remove('hidden');
+};
+
+window.closeBizAccountDetailModal = function() {
+    const modal = document.getElementById('biz-account-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    window.bizAccountDetailId = null;
+};
+
+window.openBizAccountModal = function(accountId) {
+    window.bizAccountEditId = typeof accountId === 'number' ? accountId : null;
+
+    const modal = document.getElementById('biz-account-modal');
+    if (!modal) return;
+
+    const typeEl = document.getElementById('biz-account-type');
+    const nameEl = document.getElementById('biz-account-name');
+    const noEl = document.getElementById('biz-account-no');
+    const holderEl = document.getElementById('biz-account-holder');
+    const receiveEl = document.getElementById('biz-account-default-receive');
+    const payEl = document.getElementById('biz-account-default-pay');
+    const titleEl = document.getElementById('biz-account-modal-title');
+
+    if (window.bizAccountEditId === null) {
+        if (titleEl) titleEl.innerText = '新增首付款账户';
+        if (typeEl) typeEl.value = '支付宝账户';
+        if (nameEl) nameEl.value = '';
+        if (noEl) noEl.value = '';
+        if (holderEl) holderEl.value = '';
+        if (receiveEl) receiveEl.checked = false;
+        if (payEl) payEl.checked = false;
+    } else {
+        const target = window.bizPaymentAccounts.find(item => item.id === window.bizAccountEditId);
+        if (!target) return;
+
+        if (titleEl) titleEl.innerText = '编辑首付款账户';
+        if (typeEl) typeEl.value = target.type;
+        if (nameEl) nameEl.value = target.accountName;
+        if (noEl) noEl.value = target.accountNo;
+        if (holderEl) holderEl.value = target.holder;
+        if (receiveEl) receiveEl.checked = !!target.isDefaultReceive;
+        if (payEl) payEl.checked = !!target.isDefaultPay;
+    }
+
+    modal.classList.remove('hidden');
+};
+
+window.closeBizAccountModal = function() {
+    const modal = document.getElementById('biz-account-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    window.bizAccountEditId = null;
+};
+
+window.saveBizAccount = function() {
+    const typeEl = document.getElementById('biz-account-type');
+    const nameEl = document.getElementById('biz-account-name');
+    const noEl = document.getElementById('biz-account-no');
+    const holderEl = document.getElementById('biz-account-holder');
+    const receiveEl = document.getElementById('biz-account-default-receive');
+    const payEl = document.getElementById('biz-account-default-pay');
+
+    if (!typeEl || !nameEl || !noEl || !holderEl || !receiveEl || !payEl) return;
+
+    const accountName = nameEl.value.trim();
+    const accountNo = noEl.value.trim();
+    const holder = holderEl.value.trim();
+
+    if (!accountName || !accountNo || !holder) {
+        alert('请完善账户名称、账户号和账户归属主体。');
+        return;
+    }
+
+    const validation = window.validateBizAccountNo(typeEl.value, accountNo);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+
+    const payload = {
+        type: typeEl.value,
+        accountName: accountName,
+        accountNo: validation.normalized,
+        holder: holder,
+        isDefaultReceive: receiveEl.checked,
+        isDefaultPay: payEl.checked
+    };
+
+    if (window.bizAccountEditId === null) {
+        payload.id = Date.now();
+        window.bizPaymentAccounts.unshift(payload);
+    } else {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item =>
+            item.id === window.bizAccountEditId ? { ...item, ...payload } : item
+        );
+    }
+
+    if (payload.isDefaultReceive) {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultReceive: item.id === (window.bizAccountEditId === null ? payload.id : window.bizAccountEditId)
+        }));
+    }
+
+    if (payload.isDefaultPay) {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultPay: item.id === (window.bizAccountEditId === null ? payload.id : window.bizAccountEditId)
+        }));
+    }
+
+    window.ensureBizDefaultAccounts();
+    window.renderBizPaymentAccounts();
+    window.closeBizAccountModal();
+    if (typeof showToast === 'function') {
+        showToast('账户信息已保存');
+    }
+};
+
+window.openBizAccountDeleteModal = function(accountId) {
+    window.bizAccountDeleteId = accountId;
+    const modal = document.getElementById('biz-account-delete-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+};
+
+window.closeBizAccountDeleteModal = function() {
+    const modal = document.getElementById('biz-account-delete-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    window.bizAccountDeleteId = null;
+};
+
+window.deleteBizAccount = function() {
+    if (window.bizAccountDeleteId === null) return;
+    window.bizPaymentAccounts = window.bizPaymentAccounts.filter(item => item.id !== window.bizAccountDeleteId);
+    window.ensureBizDefaultAccounts();
+    window.renderBizPaymentAccounts();
+    window.closeBizAccountDeleteModal();
+    if (typeof showToast === 'function') {
+        showToast('账户已删除');
+    }
+};
+
+window.toggleBizDefaultReceive = function(accountId, checked) {
+    const target = window.bizPaymentAccounts.find(item => item.id === accountId);
+    if (!target) return;
+
+    if (!checked && target.isDefaultReceive) {
+        const defaultCount = window.bizPaymentAccounts.filter(item => item.isDefaultReceive).length;
+        if (defaultCount <= 1) {
+            if (typeof showToast === 'function') {
+                showToast('请至少保留一个默认收款账户');
+            }
+            window.renderBizPaymentAccounts();
+            return;
+        }
+    }
+
+    if (!checked) {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item =>
+            item.id === accountId ? { ...item, isDefaultReceive: false } : item
+        );
+    } else {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultReceive: item.id === accountId
+        }));
+    }
+    window.ensureBizDefaultAccounts();
+    window.renderBizPaymentAccounts();
+};
+
+window.toggleBizDefaultPay = function(accountId, checked) {
+    const target = window.bizPaymentAccounts.find(item => item.id === accountId);
+    if (!target) return;
+
+    if (!checked && target.isDefaultPay) {
+        const defaultCount = window.bizPaymentAccounts.filter(item => item.isDefaultPay).length;
+        if (defaultCount <= 1) {
+            if (typeof showToast === 'function') {
+                showToast('请至少保留一个默认付款账户');
+            }
+            window.renderBizPaymentAccounts();
+            return;
+        }
+    }
+
+    if (!checked) {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item =>
+            item.id === accountId ? { ...item, isDefaultPay: false } : item
+        );
+    } else {
+        window.bizPaymentAccounts = window.bizPaymentAccounts.map(item => ({
+            ...item,
+            isDefaultPay: item.id === accountId
+        }));
+    }
+    window.ensureBizDefaultAccounts();
+    window.renderBizPaymentAccounts();
+};

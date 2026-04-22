@@ -2,7 +2,7 @@
 <div class="w-full h-full flex flex-col md:flex-row fade-in overflow-hidden relative">
 
     <!-- 1. 客户列表侧 (在手机端作为一级页面) -->
-    <div id="crm-list-pane" class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-full shrink-0">
+    <div id="crm-list-pane" class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col h-full shrink-0 relative">
         <div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3">
             <!-- 第一行：标题与新增按钮 -->
             <div class="flex justify-between items-center">
@@ -20,8 +20,8 @@
 
         <div class="flex-1 overflow-y-auto no-scrollbar" id="customer-list-container">
             <!-- 客户项 1 -->
-            <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group">
-                <div onclick="switchCustomerDetail('Ahmed Al-Fayed', 'Dubai, UAE | Al-Noor Trading LLC')" class="pr-10">
+            <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group" data-initial="A">
+                <div onclick="switchCustomerDetail('Ahmed Al-Fayed', 'Dubai, UAE | Al-Noor Trading LLC', '+971 50 123 4567')" class="pr-10">
                     <div class="flex justify-between font-bold text-sm text-slate-800 card-name">Ahmed Al-Fayed <span class="text-[9px] text-slate-300 font-mono">#8821</span></div>
                     <p class="text-[10px] text-slate-400 mt-0.5 card-info">Dubai, UAE | 138-xxxx-8888</p>
                     <div class="flex gap-1.5 mt-2">
@@ -36,8 +36,8 @@
             </div>
 
             <!-- 客户项 2 -->
-            <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group">
-                <div onclick="switchCustomerDetail('John Smith', 'New York, USA | Smith Supply Co.')" class="pr-10">
+            <div class="customer-card p-4 border-b border-slate-100 hover:bg-slate-50 transition-all cursor-pointer relative group" data-initial="J">
+                <div onclick="switchCustomerDetail('John Smith', 'New York, USA | Smith Supply Co.', '+1 212 555 1111')" class="pr-10">
                     <div class="flex justify-between font-bold text-sm text-slate-800 card-name">John Smith <span class="text-[9px] text-slate-300 font-mono">#8822</span></div>
                     <p class="text-[10px] text-slate-500 mt-0.5 card-info">New York, USA | 212-xxxx-1111</p>
                 </div>
@@ -47,6 +47,7 @@
                 </div>
             </div>
         </div>
+        <div id="crm-letter-index" class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-1 py-2 z-20"></div>
     </div>
 
     <!-- 2. 客户详情侧 (在手机端作为二级页面，默认隐藏) -->
@@ -72,14 +73,30 @@
                         <p class="text-xs text-slate-500">迪拜, 阿联酋 | Al-Noor Trading LLC</p>
                     </div>
                 </div>
-                <div class="flex space-x-2 w-full md:w-auto">
-                    <button class="flex-1 md:flex-none p-3 border border-slate-200 rounded-xl text-slate-400 hover:text-brand-600 transition"><i class="ph ph-whatsapp-logo text-xl mx-auto"></i></button>
-                    <button class="flex-[2] md:flex-none bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg">发起报价单</button>
+                <div class="relative flex space-x-2 w-full md:w-auto">
+                    <button onclick="toggleCrmPhoneCard(event)" class="flex-1 md:flex-none p-3 border border-slate-200 rounded-xl text-slate-400 hover:text-brand-600 transition">
+                        <i class="ph ph-phone text-xl mx-auto"></i>
+                    </button>
+                    <button onclick="openCrmAiModal()" class="flex-[2] md:flex-none bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-brand-700 transition flex items-center justify-center gap-1.5">
+                        <i class="ph ph-lightbulb-filament"></i> AI营销建议
+                    </button>
+
+                    <div id="crm-phone-card" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[88vw] max-w-sm bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-[130]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">客户名称</p>
+                        <p id="crm-phone-customer-name" class="mt-1 text-sm font-black text-brand-600 bg-brand-50 border border-brand-100 rounded-lg px-2.5 py-1 inline-flex">Ahmed Al-Fayed</p>
+                        <p class="mt-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">联系电话</p>
+                        <div class="mt-2 flex items-center justify-between gap-3">
+                            <p id="crm-phone-number" class="text-base font-mono font-black text-slate-800 tracking-tight">+971 50 123 4567</p>
+                            <button onclick="copyCrmPhone(event)" class="w-9 h-9 rounded-xl border border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-200 transition flex items-center justify-center" title="复制号码">
+                                <i class="ph ph-copy text-base"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+        <div class="pb-20">
             <!-- 时间轴 (信息增强) -->
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-left">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b pb-2">交互时间轴</h3>
@@ -111,15 +128,58 @@
                     </div>
                 </div>
             </div>
-            <!-- AI 建议卡片 -->
-            <div class="bg-white rounded border border-slate-200 shadow-sm p-4 md:p-6 h-fit text-left">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">AI 营销建议</h3>
-                <div class="p-6 bg-brand-50/50 rounded border border-dashed border-brand-200 text-center w-full">
-                    <p class="text-sm font-bold text-slate-700 underline decoration-brand-200 underline-offset-4">斋月备货提前触达</p>
-                    <p class="text-xs text-slate-500 mt-2 mb-4 leading-relaxed italic">客户去年同期采购量翻倍。建议立即通过 WhatsApp 推送“金色复古”系列 2026 新款目录并提供 5% 专属早鸟优惠。</p>
-                    <button class="bg-brand-600 text-white text-xs px-6 py-2 rounded-lg font-bold shadow-md hover:bg-brand-700 transition">生成营销话术</button>
+        </div>
+    </div>
+</div>
+
+<!-- CRM AI 营销建议弹窗 -->
+<div id="crm-ai-modal" class="hidden fixed inset-0 z-[105] flex items-center justify-center p-0 md:p-8">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeCrmAiModal()"></div>
+    <div class="relative bg-white w-full max-w-2xl h-full max-h-[88vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center">
+                    <i class="ph ph-lightbulb-filament text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-800">AI 营销建议</h3>
+                    <p class="text-[10px] text-slate-400 font-mono uppercase tracking-widest mt-0.5">Marketing Assist</p>
                 </div>
             </div>
+            <button onclick="closeCrmAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-5 no-scrollbar">
+            <div class="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 md:p-5">
+                <p class="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-2">生成营销建议</p>
+                <p id="crm-ai-suggestion-text" class="text-sm text-slate-700 leading-relaxed">点击下方按钮，基于客户历史交互自动生成建议。</p>
+                <button id="crm-ai-suggestion-btn" onclick="generateCrmMarketingSuggestion()" class="mt-4 px-4 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-md hover:bg-brand-700 transition">
+                    生成营销建议
+                </button>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">生成营销话术</p>
+                    <button id="crm-ai-script-btn" onclick="generateCrmMarketingScript()" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:text-brand-600 hover:border-brand-200 transition">
+                        生成话术
+                    </button>
+                </div>
+                <div id="crm-ai-script-loading" class="hidden mt-4 text-xs text-brand-600 font-bold flex items-center gap-2">
+                    <span class="w-3 h-3 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></span>
+                    话术生成中...
+                </div>
+                <div id="crm-ai-script-result" class="hidden mt-4 rounded-xl border border-slate-200 bg-white p-3">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">建议话术</p>
+                    <p id="crm-ai-script-text" class="text-xs text-slate-700 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-100 bg-white shrink-0">
+            <button onclick="closeCrmAiModal()" class="w-full py-3 rounded-2xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition">
+                完成
+            </button>
         </div>
     </div>
 </div>
