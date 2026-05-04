@@ -61,6 +61,355 @@ function loadProductCenter() {
         });
 }
 
+// ========== 进货单据（供应商管理列表 + 编辑弹窗） ==========
+window.PURCHASE_ORDER_STATUSES = ['草稿', '待审核', '审核通过', '部分入库', '全部入库', '审核驳回', '已作废'];
+
+window.purchaseSuggestionHiddenSuppliers = window.purchaseSuggestionHiddenSuppliers || [];
+
+window.purchaseOrdersCatalog = window.purchaseOrdersCatalog || [
+    {
+        id: 'PUR-2026-001',
+        date: '2026-02-25',
+        supplier: '深圳照明科技集团',
+        total: 12500,
+        status: '全部入库',
+        source: '图片识别 (OCR)',
+        paymentAccount: '对公付款-建行',
+        lines: [
+            { productName: '金色镂空户外灯 (G-8821)', sku: 'G-882101', qty: 1000, unitPrice: 10.2, unit: '箱', batch: '2602A', subtotal: 10200 },
+            { productName: '定制包材组件', sku: 'PKG-01', qty: 5000, unitPrice: 0.46, unit: '件', batch: '', subtotal: 2300 }
+        ]
+    },
+    {
+        id: 'PUR-2026-002',
+        date: '2026-02-23',
+        supplier: '东莞红运包装制品',
+        total: 3200,
+        status: '部分入库',
+        source: '语音输入',
+        paymentAccount: '对公付款-建行',
+        lines: [
+            { productName: '瓦楞纸箱 (标准型)', sku: 'BOX-S', qty: 800, unitPrice: 4, unit: '件', batch: 'V-0223', subtotal: 3200 }
+        ]
+    }
+];
+
+window.poFormContext = window.poFormContext || { supplierName: null };
+
+function formatPurchaseDisplayDate(iso) {
+    if (!iso) return '';
+    const p = iso.split('-');
+    if (p.length === 3) return `${p[0]}.${p[1]}.${p[2]}`;
+    return iso;
+}
+
+function formatCNYAmount(n) {
+    const v = Number(n) || 0;
+    return '¥' + v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getPurchaseStatusBadgeClass(status) {
+    const map = {
+        '草稿': 'bg-slate-100 text-slate-600',
+        '待审核': 'bg-amber-50 text-amber-700',
+        '审核通过': 'bg-sky-50 text-sky-700',
+        '部分入库': 'bg-orange-50 text-orange-600',
+        '全部入库': 'bg-emerald-50 text-emerald-700',
+        '审核驳回': 'bg-red-50 text-red-600',
+        '已作废': 'bg-slate-200 text-slate-500'
+    };
+    return map[status] || 'bg-slate-50 text-slate-600';
+}
+
+function nextPurchaseOrderId() {
+    const list = window.purchaseOrdersCatalog || [];
+    let maxSeq = 0;
+    list.forEach(po => {
+        const m = /^PUR-2026-(\d+)$/.exec(po.id);
+        if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+    });
+    return 'PUR-2026-' + String(maxSeq + 1).padStart(3, '0');
+}
+
+function hideSupplierFromPurchaseSuggestions(supplierName) {
+    const arr = window.purchaseSuggestionHiddenSuppliers;
+    if (supplierName && !arr.includes(supplierName)) arr.push(supplierName);
+}
+
+window.removeSupplierPurchaseSuggestion = function(supplierName) {
+    hideSupplierFromPurchaseSuggestions(supplierName);
+    if (typeof window.refreshPurchaseSuggestionModalContent === 'function') {
+        window.refreshPurchaseSuggestionModalContent();
+    }
+    if (typeof showToast === 'function') showToast('已移除该供应商的进货建议');
+};
+
+window.refreshPurchaseOrdersTable = function() {
+    const tbody = document.getElementById('purchase-orders-tbody');
+    if (!tbody || !window.purchaseOrdersCatalog) return;
+    const rows = window.purchaseOrdersCatalog.map(po => {
+        const badge = getPurchaseStatusBadgeClass(po.status);
+        return `
+            <tr onclick="openPurchaseDetail('${po.id}')" class="hover:bg-slate-50/80 transition-all cursor-pointer group">
+                <td class="px-6 py-4 font-mono text-slate-400">${formatPurchaseDisplayDate(po.date)}</td>
+                <td class="px-6 py-4">
+                    <p class="font-bold text-slate-800">${po.id}</p>
+                    <p class="text-[9px] text-slate-300 font-medium">提取源：${po.source || '—'}</p>
+                </td>
+                <td class="px-6 py-4"><span class="font-bold text-brand-600">${po.supplier}</span></td>
+                <td class="px-6 py-4 text-right font-mono font-bold col-hide-mobile">${formatCNYAmount(po.total)}</td>
+                <td class="px-6 py-4 text-center"><span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${badge}">${po.status}</span></td>
+                <td class="px-6 py-4 text-right"><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500 transition-colors"></i></td>
+            </tr>
+        `;
+    }).join('');
+    tbody.innerHTML = rows;
+};
+
+function buildPoStatusOptionsHtml(selected) {
+    return window.PURCHASE_ORDER_STATUSES.map(s =>
+        `<option value="${s}"${s === selected ? ' selected' : ''}>${s}</option>`
+    ).join('');
+}
+
+function buildProductOptionsForPoForm(selectedId) {
+    const list = typeof window.getProductCenterProductList === 'function' ? window.getProductCenterProductList() : [];
+    let html = '<option value="">选择产品</option>';
+    list.forEach(p => {
+        const sel = String(p.id) === String(selectedId) ? ' selected' : '';
+        html += `<option value="${p.id}"${sel}>${p.name}</option>`;
+    });
+    return html;
+}
+
+function poFormRowHtml(productId, qty, unitPrice, unit, batch) {
+    const opts = buildProductOptionsForPoForm(productId || '');
+    const u = unit || '件';
+    const sub = (Number(qty) || 0) * (Number(unitPrice) || 0);
+    return `
+        <tr class="po-form-line" data-po-line>
+            <td class="px-2 py-2 align-middle">
+                <select class="form-input w-full text-xs po-line-product">${opts}</select>
+            </td>
+            <td class="px-2 py-2 align-middle"><input type="number" min="0" step="1" class="form-input w-full text-xs text-center po-line-qty" value="${qty != null ? qty : ''}" /></td>
+            <td class="px-2 py-2 align-middle"><input type="number" min="0" step="0.01" class="form-input w-full text-xs text-center po-line-price" value="${unitPrice != null ? unitPrice : ''}" /></td>
+            <td class="px-2 py-2 align-middle">
+                <select class="form-input w-full text-xs text-center po-line-unit">
+                    <option value="件"${u === '件' ? ' selected' : ''}>件</option>
+                    <option value="箱"${u === '箱' ? ' selected' : ''}>箱</option>
+                    <option value="kg"${u === 'kg' ? ' selected' : ''}>kg</option>
+                    <option value="盒"${u === '盒' ? ' selected' : ''}>盒</option>
+                </select>
+            </td>
+            <td class="px-2 py-2 align-middle"><input type="text" class="form-input w-full text-xs text-center po-line-batch" value="${batch != null ? String(batch).replace(/"/g, '&quot;') : ''}" placeholder="—" /></td>
+            <td class="px-2 py-2 align-middle text-right font-mono font-bold text-slate-800 po-line-sub">${formatCNYAmount(sub)}</td>
+            <td class="px-2 py-2 align-middle text-center">
+                <button type="button" class="p-1.5 text-risk-high hover:bg-red-50 rounded-lg transition-colors" onclick="poFormRemoveLine(this)" title="删除"><i class="ph ph-trash text-lg"></i></button>
+            </td>
+        </tr>
+    `;
+}
+
+window.poFormRecalcTotal = function() {
+    const tbody = document.getElementById('po-form-lines-tbody');
+    const out = document.getElementById('po-form-total-display');
+    if (!tbody || !out) return;
+    let sum = 0;
+    tbody.querySelectorAll('tr[data-po-line]').forEach(tr => {
+        const q = parseFloat(tr.querySelector('.po-line-qty')?.value) || 0;
+        const p = parseFloat(tr.querySelector('.po-line-price')?.value) || 0;
+        const sub = q * p;
+        sum += sub;
+        const cell = tr.querySelector('.po-line-sub');
+        if (cell) cell.textContent = formatCNYAmount(sub);
+    });
+    out.textContent = formatCNYAmount(sum);
+};
+
+window.poFormOnProductChange = function(selectEl) {
+    const tr = selectEl.closest('tr');
+    if (!tr) return;
+    const id = selectEl.value;
+    const list = typeof window.getProductCenterProductList === 'function' ? window.getProductCenterProductList() : [];
+    const prod = list.find(p => String(p.id) === String(id));
+    const priceInput = tr.querySelector('.po-line-price');
+    if (prod && priceInput && !priceInput.dataset.touched) {
+        priceInput.value = prod.purchasePrice != null ? prod.purchasePrice : '';
+    }
+    window.poFormRecalcTotal();
+};
+
+window.poFormAddLine = function() {
+    const tbody = document.getElementById('po-form-lines-tbody');
+    if (!tbody) return;
+    tbody.insertAdjacentHTML('beforeend', poFormRowHtml('', '', '', '件', ''));
+    window.poFormRecalcTotal();
+};
+
+window.poFormRemoveLine = function(btn) {
+    const tr = btn.closest('tr');
+    if (tr) tr.remove();
+    window.poFormRecalcTotal();
+};
+
+document.addEventListener('input', function(e) {
+    if (!e.target.closest('#purchase-order-form-modal')) return;
+    if (e.target.classList.contains('po-line-qty') || e.target.classList.contains('po-line-price')) {
+        window.poFormRecalcTotal();
+    }
+});
+document.addEventListener('change', function(e) {
+    if (!e.target.closest('#purchase-order-form-modal')) return;
+    if (e.target.classList.contains('po-line-product')) {
+        window.poFormOnProductChange(e.target);
+    }
+    if (e.target.classList.contains('po-line-unit')) {
+        window.poFormRecalcTotal();
+    }
+});
+
+window.openPurchaseOrderFormModal = function(payload) {
+    const modal = document.getElementById('purchase-order-form-modal');
+    if (!modal) return;
+    const supplier = payload && payload.supplierName ? payload.supplierName : '';
+    const lines = (payload && payload.lines) || [];
+    window.poFormContext = { supplierName: supplier, fromSuggestion: !!(payload && payload.fromSuggestion) };
+
+    const title = document.getElementById('po-form-title');
+    if (title) title.textContent = payload && payload.title ? payload.title : '编辑进货单';
+
+    const supSel = document.getElementById('po-form-supplier');
+    if (supSel) {
+        supSel.innerHTML = `<option value="${supplier.replace(/"/g, '&quot;')}">${supplier}</option>`;
+        supSel.value = supplier;
+    }
+
+    const st = document.getElementById('po-form-status');
+    if (st) {
+        const defaultStatus = payload && payload.defaultStatus ? payload.defaultStatus : '草稿';
+        st.innerHTML = buildPoStatusOptionsHtml(defaultStatus);
+        st.disabled = !!(payload && payload.fromSuggestion);
+    }
+
+    const dt = document.getElementById('po-form-date');
+    if (dt) {
+        const d = payload && payload.date ? payload.date : new Date().toISOString().slice(0, 10);
+        dt.value = d;
+    }
+
+    const tbody = document.getElementById('po-form-lines-tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        if (lines.length) {
+            lines.forEach(l => {
+                tbody.insertAdjacentHTML('beforeend', poFormRowHtml(l.productId, l.qty, l.unitPrice, l.unit || '件', l.batch || ''));
+            });
+        } else {
+            tbody.insertAdjacentHTML('beforeend', poFormRowHtml('', '', '', '件', ''));
+        }
+    }
+
+    window.poFormRecalcTotal();
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+};
+
+window.closePurchaseOrderFormModal = function() {
+    const modal = document.getElementById('purchase-order-form-modal');
+    if (modal) modal.classList.add('hidden');
+    const sug = document.getElementById('purchase-suggestion-modal');
+    if (sug && !sug.classList.contains('hidden')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+};
+
+window.openPurchaseOrderFormFromSuggestion = function(supplierName) {
+    const grouped = typeof window.getVisibleOutOfStockPurchaseGroups === 'function'
+        ? window.getVisibleOutOfStockPurchaseGroups()
+        : null;
+    if (!grouped || !grouped[supplierName]) {
+        if (typeof showToast === 'function') showToast('未找到该供应商的缺货建议');
+        return;
+    }
+    const rows = grouped[supplierName];
+    const lines = rows.map(r => ({
+        productId: r.id,
+        qty: r.suggest,
+        unitPrice: r.unitCost,
+        unit: '件',
+        batch: ''
+    }));
+    window.openPurchaseOrderFormModal({
+        supplierName,
+        lines,
+        fromSuggestion: true,
+        defaultStatus: '待审核',
+        title: '编辑进货单',
+        date: new Date().toISOString().slice(0, 10)
+    });
+};
+
+window.savePurchaseOrderForm = function() {
+    const ctx = window.poFormContext || {};
+    const supplier = document.getElementById('po-form-supplier')?.value || '';
+    const status = document.getElementById('po-form-status')?.value || '草稿';
+    const dateStr = document.getElementById('po-form-date')?.value || new Date().toISOString().slice(0, 10);
+    const payment = document.getElementById('po-form-payment')?.value || '';
+    const tbody = document.getElementById('po-form-lines-tbody');
+    if (!tbody || !supplier) return;
+
+    const list = typeof window.getProductCenterProductList === 'function' ? window.getProductCenterProductList() : [];
+    const lines = [];
+    let total = 0;
+    tbody.querySelectorAll('tr[data-po-line]').forEach(tr => {
+        const pid = tr.querySelector('.po-line-product')?.value;
+        const qty = parseFloat(tr.querySelector('.po-line-qty')?.value) || 0;
+        const unitPrice = parseFloat(tr.querySelector('.po-line-price')?.value) || 0;
+        const unit = tr.querySelector('.po-line-unit')?.value || '件';
+        const batch = tr.querySelector('.po-line-batch')?.value || '';
+        if (!pid && qty === 0 && unitPrice === 0) return;
+        const prod = list.find(p => String(p.id) === String(pid));
+        const productName = prod ? prod.name : (pid ? '未命名产品' : '');
+        const sku = prod ? prod.sku : '';
+        const subtotal = qty * unitPrice;
+        total += subtotal;
+        if (!pid) return;
+        lines.push({ productName, sku, qty, unitPrice, unit, batch, subtotal });
+    });
+
+    if (!lines.length) {
+        if (typeof showToast === 'function') showToast('请至少保留一行有效商品');
+        else alert('请至少保留一行有效商品');
+        return;
+    }
+
+    const finalStatus = ctx.fromSuggestion ? '待审核' : status;
+
+    const newPo = {
+        id: nextPurchaseOrderId(),
+        date: dateStr,
+        supplier,
+        total,
+        status: finalStatus,
+        source: ctx.fromSuggestion ? '产品中心 · 缺货建议生成' : '手工录入',
+        paymentAccount: payment,
+        lines
+    };
+    window.purchaseOrdersCatalog.unshift(newPo);
+    if (ctx.fromSuggestion) {
+        hideSupplierFromPurchaseSuggestions(supplier);
+        if (typeof window.refreshPurchaseSuggestionModalContent === 'function') {
+            window.refreshPurchaseSuggestionModalContent();
+        }
+    }
+    window.refreshPurchaseOrdersTable();
+    window.closePurchaseOrderFormModal();
+    if (typeof showToast === 'function') showToast('进货单据已保存：' + newPo.id + '（' + finalStatus + '）');
+    else alert('已保存');
+};
+
 function loadSupplier() {
     // 添加时间戳参数，强制浏览器加载最新版本的文件
     const timestamp = new Date().getTime();
@@ -68,6 +417,9 @@ function loadSupplier() {
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-supplier').innerHTML = data;
+            if (typeof window.refreshPurchaseOrdersTable === 'function') {
+                window.refreshPurchaseOrdersTable();
+            }
         })
         .catch(error => {
             console.error('Error loading supplier:', error);
@@ -77,6 +429,7 @@ function loadSupplier() {
 // 页面加载时加载默认模块
 window.onload = function() {
     loadDashboard();
+    if (typeof syncSidebarMembershipBadge === 'function') syncSidebarMembershipBadge();
 };
 
 function switchTab(tabId) {
@@ -116,6 +469,230 @@ function toggleSidebar() {
     if (ol) ol.classList.toggle('hidden');
 }
 
+// --- 会员账户与子账号（本地持久化演示） ---
+const MEMBERSHIP_STORAGE_KEY = 'tm_membership_account_v1';
+const MEMBER_PREMIUM_SUBUSER_MAX = 4;
+const MEMBER_SUBUSER_ROLES = ['管理员', '运营', '仓库', '财务', '只读'];
+
+function defaultMembershipAccount() {
+    return {
+        subscribed: false,
+        plan: null,
+        expiryDate: '',
+        referralCode: 'GIGA-JIN-8821',
+        subUsers: []
+    };
+}
+
+function loadMembershipAccount() {
+    try {
+        const raw = localStorage.getItem(MEMBERSHIP_STORAGE_KEY);
+        if (!raw) return defaultMembershipAccount();
+        const o = JSON.parse(raw);
+        const base = defaultMembershipAccount();
+        return {
+            ...base,
+            ...o,
+            subUsers: Array.isArray(o.subUsers) ? o.subUsers : []
+        };
+    } catch (e) {
+        return defaultMembershipAccount();
+    }
+}
+
+window.membershipAccount = loadMembershipAccount();
+
+window.saveMembershipAccount = function() {
+    try {
+        localStorage.setItem(MEMBERSHIP_STORAGE_KEY, JSON.stringify(window.membershipAccount));
+    } catch (e) { /* ignore */ }
+    syncSidebarMembershipBadge();
+};
+
+function syncSidebarMembershipBadge() {
+    const label = document.getElementById('sidebar-member-label');
+    if (!label) return;
+    const m = window.membershipAccount;
+    if (!m || !m.subscribed || !m.plan) {
+        label.textContent = '试用版本';
+        return;
+    }
+    if (m.plan === 'starter') label.textContent = '启航会员';
+    else if (m.plan === 'premium') label.textContent = '优享会员';
+    else label.textContent = '试用版本';
+}
+
+function formatMembershipExpiryDisplay(iso) {
+    if (!iso) return '—';
+    const p = String(iso).split('-');
+    if (p.length !== 3) return iso;
+    return `${p[0]}年${parseInt(p[1], 10)}月${parseInt(p[2], 10)}日`;
+}
+
+function membershipPlanLabel(plan) {
+    if (plan === 'starter') return '启航会员';
+    if (plan === 'premium') return '优享会员';
+    return '—';
+}
+
+function buildSubUserRoleOptionsHtml(selected) {
+    return MEMBER_SUBUSER_ROLES.map(r =>
+        `<option value="${r}"${r === selected ? ' selected' : ''}>${r}</option>`
+    ).join('');
+}
+
+function renderMemberSubUsersTable() {
+    const tbody = document.getElementById('member-subusers-tbody');
+    const roleSel = document.getElementById('member-new-user-role');
+    const badge = document.getElementById('member-subuser-count-badge');
+    const hint = document.getElementById('member-subuser-limit-hint');
+    if (!tbody) return;
+
+    const list = window.membershipAccount.subUsers || [];
+    const used = list.length;
+    if (badge) badge.textContent = `已创建 ${used} / ${MEMBER_PREMIUM_SUBUSER_MAX}（不含主账号）`;
+    if (hint) {
+        hint.textContent = used >= MEMBER_PREMIUM_SUBUSER_MAX
+            ? '已达优享版子账号上限，请先删除用户后再新建。'
+            : `优享版含主账号共 5 个席位，您还可创建 ${MEMBER_PREMIUM_SUBUSER_MAX - used} 个子账号。`;
+    }
+    tbody.innerHTML = list.map(u => `
+        <tr class="hover:bg-slate-50/80">
+            <td class="px-4 py-3 font-bold text-slate-800">${escapeMemberHtml(u.name)}</td>
+            <td class="px-4 py-3">
+                <select class="form-input w-full text-xs member-subuser-role" data-user-id="${escapeMemberHtml(u.id)}" onchange="memberSubUserRoleChange(this.dataset.userId, this.value)">
+                    ${buildSubUserRoleOptionsHtml(u.role)}
+                </select>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" class="p-1.5 text-risk-high hover:bg-red-50 rounded-lg transition" title="删除" onclick="memberDeleteSubUser(${JSON.stringify(String(u.id))})">
+                    <i class="ph ph-trash text-lg"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 text-xs">暂无子账号，请在下方新建。</td></tr>';
+}
+
+function escapeMemberHtml(s) {
+    return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+}
+
+function renderMemberModalPanels() {
+    const m = window.membershipAccount;
+    const sumBox = document.getElementById('member-subscribed-summary');
+    const premBox = document.getElementById('member-premium-users-section');
+    const planEl = document.getElementById('member-summary-plan');
+    const expEl = document.getElementById('member-summary-expiry');
+    const refEl = document.getElementById('member-summary-referral');
+    const refInline = document.getElementById('member-referral-inline');
+
+    const code = m.referralCode || '—';
+    if (refInline) refInline.textContent = code;
+
+    if (m.subscribed && m.plan) {
+        if (sumBox) sumBox.classList.remove('hidden');
+        if (planEl) planEl.textContent = membershipPlanLabel(m.plan);
+        if (expEl) expEl.textContent = formatMembershipExpiryDisplay(m.expiryDate);
+        if (refEl) refEl.textContent = code;
+    } else {
+        if (sumBox) sumBox.classList.add('hidden');
+    }
+
+    if (m.subscribed && m.plan === 'premium') {
+        if (premBox) premBox.classList.remove('hidden');
+        const newRole = document.getElementById('member-new-user-role');
+        if (newRole) newRole.innerHTML = buildSubUserRoleOptionsHtml(MEMBER_SUBUSER_ROLES[1]);
+        renderMemberSubUsersTable();
+    } else if (premBox) {
+        premBox.classList.add('hidden');
+    }
+}
+
+window.memberSubscribePlan = function(plan) {
+    const m = window.membershipAccount;
+    const exp = new Date();
+    exp.setFullYear(exp.getFullYear() + 1);
+    m.subscribed = true;
+    m.plan = plan;
+    m.expiryDate = exp.toISOString().slice(0, 10);
+    if (plan === 'starter') {
+        m.subUsers = [];
+    }
+    window.saveMembershipAccount();
+    renderMemberModalPanels();
+    if (typeof showToast === 'function') {
+        showToast(plan === 'premium' ? '已订阅优享会员（演示）' : '已订阅启航会员（演示）');
+    }
+};
+
+window.memberAddSubUser = function() {
+    const m = window.membershipAccount;
+    if (!m.subscribed || m.plan !== 'premium') return;
+    const list = m.subUsers || [];
+    if (list.length >= MEMBER_PREMIUM_SUBUSER_MAX) {
+        if (typeof showToast === 'function') showToast('子账号已达上限（4 个）');
+        else alert('子账号已达上限');
+        return;
+    }
+    const nameInput = document.getElementById('member-new-user-name');
+    const roleSel = document.getElementById('member-new-user-role');
+    const name = (nameInput && nameInput.value || '').trim();
+    const role = roleSel && roleSel.value ? roleSel.value : MEMBER_SUBUSER_ROLES[1];
+    if (!name) {
+        if (typeof showToast === 'function') showToast('请输入用户名称');
+        else alert('请输入用户名称');
+        return;
+    }
+    if (list.some(u => u.name === name)) {
+        if (typeof showToast === 'function') showToast('该名称已存在');
+        return;
+    }
+    list.push({
+        id: 'su_' + Date.now().toString(36),
+        name,
+        role
+    });
+    m.subUsers = list;
+    window.saveMembershipAccount();
+    if (nameInput) nameInput.value = '';
+    renderMemberSubUsersTable();
+    if (typeof showToast === 'function') showToast('子账号已创建');
+};
+
+window.memberDeleteSubUser = function(userId) {
+    if (!userId || !confirm('确定删除该子账号？')) return;
+    const m = window.membershipAccount;
+    m.subUsers = (m.subUsers || []).filter(u => String(u.id) !== String(userId));
+    window.saveMembershipAccount();
+    renderMemberSubUsersTable();
+    if (typeof showToast === 'function') showToast('已删除子账号');
+};
+
+window.memberSubUserRoleChange = function(userId, newRole) {
+    if (!userId) return;
+    const m = window.membershipAccount;
+    const u = (m.subUsers || []).find(x => String(x.id) === String(userId));
+    if (u) {
+        u.role = newRole;
+        window.saveMembershipAccount();
+        if (typeof showToast === 'function') showToast('角色已更新');
+    }
+};
+
+function syncPosterReferralFromAccount() {
+    const code = (window.membershipAccount && window.membershipAccount.referralCode) || 'GIGA-JIN-8821';
+    const el = document.getElementById('poster-ref-code');
+    if (el) el.textContent = code;
+    const qr = document.getElementById('poster-qr');
+    if (qr) {
+        const enc = encodeURIComponent('TradeMind-' + code);
+        qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' + enc;
+    }
+}
+
 // --- <用户订阅>语音逻辑 (修复版) ---
 function computeLaunchDiscountLabel(originPrice, launchPrice) {
     if (!originPrice || !launchPrice || originPrice <= 0) return '首发优惠';
@@ -144,14 +721,19 @@ function initMemberPricing() {
 
 // 会员弹窗控制
 function openMemberModal() {
+    window.membershipAccount = loadMembershipAccount();
     initMemberPricing();
+    renderMemberModalPanels();
     document.getElementById('member-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 function closeMemberModal() { document.getElementById('member-modal').classList.add('hidden'); document.body.style.overflow = ''; }
 
 // 品牌海报控制
-function showPoster() { document.getElementById('poster-modal').classList.remove('hidden'); }
+function showPoster() {
+    syncPosterReferralFromAccount();
+    document.getElementById('poster-modal').classList.remove('hidden');
+}
 function closePoster() { document.getElementById('poster-modal').classList.add('hidden'); }
 /**
 * 核心功能：生成并下载海报照片
@@ -255,23 +837,133 @@ function switchAuditTab(tab) {
     document.getElementById('tab-' + tab).classList.add('active');
 }
 
+// 进行中单据详情：基础数据与状态配置
+const orderDetailMap = {
+    'INV-2026-0082': {
+        customerName: 'John Smith',
+        deliveryDate: '2026-04-25',
+        status: '待仓库捡货',
+        receiptAccount: '默认收款账户'
+    },
+    'INV-2026-0079': {
+        customerName: 'Satoshi Nakamoto',
+        deliveryDate: '2026-04-27',
+        status: '待支付尾款',
+        receiptAccount: '默认收款账户'
+    }
+};
+
+const orderStatusClassMap = {
+    '待仓库捡货': 'text-[9px] text-brand-600 font-bold',
+    '待支付尾款': 'text-[9px] text-orange-500 font-bold',
+    '待发货': 'text-[9px] text-blue-600 font-bold',
+    '已发货': 'text-[9px] text-blue-500 font-bold',
+    '已完成': 'text-[9px] text-emerald-600 font-bold',
+    '已退款': 'text-[9px] text-slate-500 font-bold'
+};
+
+let activeOrderDetailId = '';
+
 //  进行中单据：详情查看逻辑
 function openOrderDetail(orderId) {
+    const detail = orderDetailMap[orderId];
+    activeOrderDetailId = orderId;
     document.getElementById('detail-order-id').innerText = orderId;
+
+    if (detail) {
+        document.getElementById('detail-customer-name').value = detail.customerName;
+        document.getElementById('detail-delivery-date').value = detail.deliveryDate;
+        document.getElementById('detail-order-status').value = detail.status;
+        document.getElementById('detail-receipt-account').value = detail.receiptAccount || '默认收款账户';
+    } else {
+        document.getElementById('detail-customer-name').value = '';
+        document.getElementById('detail-delivery-date').value = '';
+        document.getElementById('detail-order-status').value = '待仓库捡货';
+        document.getElementById('detail-receipt-account').value = '默认收款账户';
+    }
+
     const modal = document.getElementById('order-detail-modal');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+}
+
+function handleDetailStatusChange(newStatus) {
+    if (!activeOrderDetailId) return;
+
+    if (!orderDetailMap[activeOrderDetailId]) {
+        orderDetailMap[activeOrderDetailId] = {
+            customerName: '',
+            deliveryDate: '',
+            status: newStatus
+        };
+    } else {
+        orderDetailMap[activeOrderDetailId].status = newStatus;
+    }
+
+    const label = document.getElementById(`order-status-label-${activeOrderDetailId}`);
+    if (label) {
+        label.innerText = newStatus;
+        label.className = orderStatusClassMap[newStatus] || 'text-[9px] text-slate-500 font-bold';
+    }
+}
+
+function handleDetailReceiptAccountChange(newAccount) {
+    if (!activeOrderDetailId) return;
+    if (!orderDetailMap[activeOrderDetailId]) return;
+    orderDetailMap[activeOrderDetailId].receiptAccount = newAccount;
 }
 
 function closeOrderDetail() {
     const modal = document.getElementById('order-detail-modal');
     modal.classList.add('hidden');
     document.body.style.overflow = '';
+    activeOrderDetailId = '';
+}
+
+function deletePendingDraft(triggerBtn) {
+    const targetCard = triggerBtn.closest('.group');
+    if (!targetCard) return;
+    targetCard.remove();
+    showToast('草稿单据已删除');
 }
 
 // 弹窗开关
-function openAuditModal(name) { document.getElementById('audit-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
-function closeAuditModal() { document.getElementById('audit-modal').classList.add('hidden'); document.body.style.overflow = ''; }
+function toggleAuditModalVisibility(visible) {
+    const auditModals = document.querySelectorAll('[id="audit-modal"]');
+    auditModals.forEach((modal) => {
+        if (visible) {
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    });
+    document.body.style.overflow = visible ? 'hidden' : '';
+}
+
+function openAuditModal(name) {
+    const auditCustomerInput = document.getElementById('audit-customer-name');
+    if (auditCustomerInput && name) {
+        auditCustomerInput.value = name;
+    }
+
+    const auditDeliveryDate = document.getElementById('audit-delivery-date');
+    if (auditDeliveryDate) {
+        auditDeliveryDate.value = '2026-04-25';
+    }
+
+    const auditReceiptAccount = document.getElementById('audit-receipt-account');
+    if (auditReceiptAccount) {
+        auditReceiptAccount.value = '默认收款账户';
+    }
+
+    toggleAuditModalVisibility(true);
+}
+function closeAuditModal() {
+    toggleAuditModalVisibility(false);
+}
+
+window.openAuditModal = openAuditModal;
+window.closeAuditModal = closeAuditModal;
 
 // 高级信息抽屉切换
 function toggleAdvanced(type) {
@@ -2501,7 +3193,34 @@ function confirmDeleteSupplier(supplierName) {
 
 // --- 进货单详情弹窗 ---
 function openPurchaseDetail(id) {
-    document.getElementById('detail-purchase-id').innerText = id;
+    const po = (window.purchaseOrdersCatalog || []).find(p => p.id === id);
+    if (!po) {
+        if (typeof showToast === 'function') showToast('未找到该进货单据');
+        return;
+    }
+    const idEl = document.getElementById('detail-purchase-id');
+    if (idEl) idEl.textContent = po.id;
+    const srcEl = document.getElementById('detail-purchase-source');
+    if (srcEl) srcEl.textContent = '提取源：' + (po.source || '—');
+    const tbody = document.getElementById('detail-purchase-lines');
+    if (tbody) {
+        const rows = (po.lines || []).map(line => {
+            const batchOrSku = line.batch
+                ? 'BATCH: ' + line.batch
+                : (line.sku ? 'SKU: ' + line.sku : '');
+            const sub = line.subtotal != null ? line.subtotal : (Number(line.qty) || 0) * (Number(line.unitPrice) || 0);
+            return `
+            <tr>
+                <td class="px-6 py-4 font-bold text-slate-800">${line.productName || ''}${batchOrSku ? `<p class="text-[9px] text-slate-400 font-mono tracking-tighter mt-0.5">${batchOrSku}</p>` : ''}</td>
+                <td class="px-6 py-4 text-center font-mono">${formatCNYAmount(line.unitPrice)} <span class="text-[9px] text-slate-400 italic">(${line.unit || '件'})</span></td>
+                <td class="px-6 py-4 text-center font-mono font-bold text-slate-900">${Number(line.qty).toLocaleString('zh-CN')}</td>
+                <td class="px-6 py-4 text-right font-mono font-black text-slate-900">${formatCNYAmount(sub)}</td>
+            </tr>`;
+        }).join('');
+        tbody.innerHTML = rows || '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">暂无明细</td></tr>';
+    }
+    const tot = document.getElementById('detail-purchase-total');
+    if (tot) tot.textContent = formatCNYAmount(po.total);
     document.getElementById('purchase-detail-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }

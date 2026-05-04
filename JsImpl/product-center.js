@@ -30,7 +30,8 @@ let products = [
         stock: 42,
         salesVolume: 3250,
         icon: 'layout',
-        stockStatus: '缺货'
+        stockStatus: '缺货',
+        warning_stock: 120
     },
     {
         id: 3,
@@ -76,6 +77,22 @@ let products = [
         salesVolume: 2150,
         icon: 'tent',
         stockStatus: '充足'
+    },
+    {
+        id: 6,
+        name: '露营制冷冰桶（便携 12L）',
+        sku: 'COOL-12L',
+        category1: '户外装备',
+        category2: '露营用品',
+        supplier: '大连大发制冷厂',
+        region: '国内市场',
+        price: 128.00,
+        purchasePrice: 85.00,
+        stock: 8,
+        salesVolume: 920,
+        icon: 'snowflake',
+        stockStatus: '缺货',
+        warning_stock: 50
     }
 ];
 
@@ -665,26 +682,293 @@ window.saveWarehouse = function() {
     }
 };
 
-window.openPurchaseSuggestionModal = function() {
-    console.log('=== openPurchaseSuggestionModal 被调用 ===');
+function getProductWarningStock(p) {
+    if (typeof p.warning_stock === 'number') return p.warning_stock;
+    return 200;
+}
+
+function buildOutOfStockPurchaseGroups(productList) {
+    const out = productList.filter(p => p.stockStatus === '缺货');
+    return out.reduce((acc, p) => {
+        const supplierName = p.supplier || '未知供应商';
+        if (!acc[supplierName]) acc[supplierName] = [];
+        const warning = getProductWarningStock(p);
+        const unitCost = typeof p.purchasePrice === 'number' ? p.purchasePrice : 0;
+        const suggest = Math.max(0, Math.round(warning * 2 - p.stock));
+        acc[supplierName].push({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            current: p.stock,
+            warning,
+            suggest,
+            unitCost
+        });
+        return acc;
+    }, {});
+}
+
+window.getProductCenterProductList = function() {
+    return products;
+};
+
+window.getVisibleOutOfStockPurchaseGroups = function() {
+    const hidden = window.purchaseSuggestionHiddenSuppliers || [];
+    const raw = buildOutOfStockPurchaseGroups(products);
+    const out = {};
+    Object.keys(raw).forEach(k => {
+        if (!hidden.includes(k)) out[k] = raw[k];
+    });
+    return out;
+};
+
+window.refreshPurchaseSuggestionModalContent = function() {
+    const content = document.getElementById('purchase-suggestion-content');
     const modal = document.getElementById('purchase-suggestion-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
+    if (!content || !modal || modal.classList.contains('hidden')) return;
+    const mockDocNo = window.__poSuggestionMockNo || ('PO-MOCK-' + Date.now().toString(36).toUpperCase().slice(-6));
+    window.__poSuggestionMockNo = mockDocNo;
+    renderPurchaseSuggestionContent(content, window.getVisibleOutOfStockPurchaseGroups(), mockDocNo);
+};
+
+function renderPurchaseGenLoading(mockDocNo) {
+    return `
+        <div class="max-w-lg mx-auto py-10 px-4 space-y-8">
+            <div class="text-center space-y-2">
+                <p class="text-[10px] font-mono text-slate-400 tracking-widest">模拟单据号 · ${mockDocNo}</p>
+                <h3 class="text-lg font-black text-slate-800 tracking-tight">正在生成进货单据</h3>
+                <p class="text-xs text-slate-500" data-purchase-status>正在扫描产品库缺货 SKU…</p>
+            </div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-brand-500 to-teal-400 rounded-full transition-all duration-500 ease-out w-0" data-purchase-progress style="width: 0%"></div>
+            </div>
+            <ul class="space-y-3 text-xs text-slate-600">
+                <li class="flex items-center gap-3 transition-opacity duration-300" data-purchase-step="0"><span class="purchase-step-icon w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0"><i class="ph ph-magnifying-glass text-slate-400"></i></span><span>匹配库存状态为「缺货」的产品</span></li>
+                <li class="flex items-center gap-3 opacity-40 transition-opacity duration-300" data-purchase-step="1"><span class="purchase-step-icon w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0"><i class="ph ph-truck text-slate-400"></i></span><span>按主供应商拆分为多张进货清单</span></li>
+                <li class="flex items-center gap-3 opacity-40 transition-opacity duration-300" data-purchase-step="2"><span class="purchase-step-icon w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0"><i class="ph ph-receipt text-slate-400"></i></span><span>汇总建议采购量与预估成本</span></li>
+            </ul>
+        </div>
+    `;
+}
+
+function renderPurchaseSuggestionContent(container, groupedBySupplier, mockDocNo) {
+    const entries = Object.entries(groupedBySupplier);
+    if (!entries.length) {
+        const rawCount = Object.keys(buildOutOfStockPurchaseGroups(products)).length;
+        const hidden = (window.purchaseSuggestionHiddenSuppliers || []).length;
+        const msg = rawCount > 0 && hidden > 0
+            ? '<p class="text-xs text-slate-400 mt-2">缺货建议已全部处理或已移除；可在供应商管理中查看已生成的进货单据。</p>'
+            : '<p class="text-xs text-slate-400 mt-2">无需生成进货单据；库存健康时可关闭本窗口。</p>';
+        container.innerHTML = `
+            <div class="text-center py-16 px-6">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-500">
+                    <i class="ph ph-check-circle text-3xl"></i>
+                </div>
+                <p class="text-sm font-bold text-slate-700">当前无可展示的进货建议</p>
+                ${msg}
+            </div>
+        `;
+        return;
     }
+
+    let html = `
+        <div class="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-5 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">模拟预览</p>
+                <p class="text-sm font-black text-slate-800">按供应商汇总的缺货补货单</p>
+                <p class="text-[10px] font-mono text-slate-400 mt-1">单据号 ${mockDocNo} · 共 ${entries.length} 家供应商</p>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] font-bold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-xl w-fit">
+                <i class="ph ph-info"></i> 演示数据 · 未调用后端
+            </div>
+        </div>
+    `;
+
+    entries.forEach(([supplier, rows]) => {
+        let supplierTotal = 0;
+        html += `
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="ph ph-storefront text-brand-500"></i> ${supplier}
+                    </h3>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${rows.length} 个缺货 SKU</span>
+                </div>
+                <div class="flex flex-wrap gap-2 shrink-0">
+                    <button type="button" onclick='window.openPurchaseOrderFormFromSuggestion(${JSON.stringify(supplier)})' class="px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black shadow-md hover:bg-slate-800 transition active:scale-95 flex items-center gap-1.5">
+                        <i class="ph ph-file-plus"></i> 生成进货单
+                    </button>
+                    <button type="button" onclick='window.removeSupplierPurchaseSuggestion(${JSON.stringify(supplier)})' class="px-4 py-2 rounded-xl border border-slate-200 text-slate-500 text-[10px] font-bold hover:bg-red-50 hover:text-risk-high hover:border-red-100 transition">
+                        删除本组
+                    </button>
+                </div>
+            </div>
+            <div class="hidden md:block overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50/50 text-[10px] text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-4">产品名 (SKU)</th>
+                            <th class="px-6 py-4 text-right">库存 / 预警</th>
+                            <th class="px-6 py-4 text-right">建议采购</th>
+                            <th class="px-6 py-4 text-right">预估小计 (进价)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs divide-y divide-slate-50">
+        `;
+        rows.forEach(product => {
+            const subtotal = product.suggest * product.unitCost;
+            supplierTotal += subtotal;
+            html += `
+                        <tr>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="font-bold text-slate-800">${product.name}</p>
+                                    <p class="text-[10px] text-slate-400 font-mono">SKU: ${product.sku}</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="font-mono font-bold text-risk-high">${product.current}</span>
+                                <span class="text-slate-300"> / </span>
+                                <span class="font-mono text-slate-500">${product.warning}</span>
+                                <span class="ml-2 inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-50 text-risk-high">缺货</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <input type="number" value="${product.suggest}" min="0" class="w-20 px-2 py-1 border border-slate-200 rounded text-xs text-right">
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900">
+                                ¥${subtotal.toFixed(2)}
+                            </td>
+                        </tr>
+            `;
+        });
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="md:hidden space-y-4 p-4">
+        `;
+        rows.forEach(product => {
+            const subtotal = product.suggest * product.unitCost;
+            html += `
+                <div class="border border-slate-100 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                            <i class="ph ph-package text-xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-slate-800 truncate">${product.name}</p>
+                            <p class="text-[10px] text-slate-400 font-mono">SKU: ${product.sku}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">库存 / 预警</span>
+                            <span class="font-mono font-bold text-risk-high">${product.current}<span class="text-slate-300 font-normal"> / </span><span class="text-slate-500">${product.warning}</span></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">建议采购</span>
+                            <span class="font-mono font-bold text-slate-800">${product.suggest}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">预估小计</span>
+                            <span class="font-mono font-bold text-slate-900">¥${subtotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `
+            </div>
+            <div class="px-6 py-4 border-t border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                <span class="text-sm font-bold text-slate-800">本供应商小计</span>
+                <span class="font-mono font-bold text-slate-900">¥${supplierTotal.toFixed(2)}</span>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+window.openPurchaseSuggestionModal = function() {
+    const modal = document.getElementById('purchase-suggestion-modal');
+    const content = document.getElementById('purchase-suggestion-content');
+    if (!modal || !content) return;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    const mockDocNo = 'PO-MOCK-' + Date.now().toString(36).toUpperCase().slice(-6);
+
+    content.innerHTML = renderPurchaseGenLoading(mockDocNo);
+
+    const setProgress = pct => {
+        const bar = content.querySelector('[data-purchase-progress]');
+        if (bar) bar.style.width = pct + '%';
+    };
+    const setStatus = text => {
+        const el = content.querySelector('[data-purchase-status]');
+        if (el) el.textContent = text;
+    };
+    const stepIcons = ['ph-magnifying-glass', 'ph-truck', 'ph-receipt'];
+    const highlightStep = idx => {
+        content.querySelectorAll('[data-purchase-step]').forEach((li, i) => {
+            li.classList.toggle('opacity-40', i > idx);
+            const iconWrap = li.querySelector('.purchase-step-icon');
+            if (!iconWrap) return;
+            iconWrap.className = 'purchase-step-icon w-6 h-6 rounded-full flex items-center justify-center shrink-0';
+            if (i < idx) {
+                iconWrap.classList.add('bg-teal-500', 'text-white');
+                iconWrap.innerHTML = '<i class="ph-bold ph-check"></i>';
+            } else if (i === idx) {
+                iconWrap.classList.add('bg-brand-500', 'text-white');
+                iconWrap.innerHTML = `<i class="ph ${stepIcons[i]}"></i>`;
+            } else {
+                iconWrap.classList.add('bg-slate-100');
+                iconWrap.innerHTML = `<i class="ph ${stepIcons[i]} text-slate-400"></i>`;
+            }
+        });
+    };
+
+    requestAnimationFrame(() => {
+        setProgress(18);
+        highlightStep(0);
+    });
+
+    setTimeout(() => {
+        setStatus('正在按主供应商聚合缺货行…');
+        setProgress(48);
+        highlightStep(1);
+    }, 420);
+
+    setTimeout(() => {
+        setStatus('正在生成模拟进货单据与成本汇总…');
+        setProgress(88);
+        highlightStep(2);
+    }, 820);
+
+    setTimeout(() => {
+        setProgress(100);
+        window.__poSuggestionMockNo = mockDocNo;
+        const grouped = window.getVisibleOutOfStockPurchaseGroups();
+        renderPurchaseSuggestionContent(content, grouped, mockDocNo);
+    }, 1180);
 };
 
 window.closePurchaseSuggestionModal = function() {
-    console.log('=== closePurchaseSuggestionModal 被调用 ===');
     const modal = document.getElementById('purchase-suggestion-modal');
     if (modal) {
         modal.classList.add('hidden');
     }
+    document.body.style.overflow = '';
 };
 
 window.savePurchaseOrder = function() {
-    console.log('=== savePurchaseOrder 被调用 ===');
-    alert('进货单已保存！');
     window.closePurchaseSuggestionModal();
+    if (typeof showToast === 'function') {
+        showToast('已关闭建议窗口');
+    }
 };
 
 window.closeCostAnalysis = function() {

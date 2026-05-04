@@ -56,7 +56,8 @@
             <div class="ml-3 text-left">
                 <p class="text-xs font-bold text-slate-200">Jin (管理员)</p>
                 <div class="flex items-center text-[10px] text-brand-500 font-bold mt-0.5">
-                    <i class="ph ph-crown-simple mr-1"></i> 试用版本
+                    <i class="ph ph-crown-simple mr-1" id="sidebar-member-crown"></i>
+                    <span id="sidebar-member-label">试用版本</span>
                 </div>
             </div>
         </div>
@@ -83,6 +84,59 @@
 
             <!-- 主体内容：适配单屏展示 -->
             <div class="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar space-y-6">
+                <!-- 已订阅：当前会员类型 / 到期日 / 推荐码 -->
+                <div id="member-subscribed-summary" class="hidden rounded-[1.75rem] border border-teal-100 bg-gradient-to-br from-teal-50/90 to-white p-5 md:p-6 shadow-sm">
+                    <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-4">当前订阅</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">会员类型</p>
+                            <p id="member-summary-plan" class="text-lg font-black text-slate-800">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">到期日</p>
+                            <p id="member-summary-expiry" class="text-lg font-mono font-bold text-slate-700">—</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">专属推荐码</p>
+                            <p id="member-summary-referral" class="text-lg font-mono font-black text-teal-800 tracking-tight">—</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 优享会员：子账号管理（不含主账号，最多再建 4 个） -->
+                <div id="member-premium-users-section" class="hidden space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">商户子账号</h3>
+                        <span id="member-subuser-count-badge" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg"></span>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-inner">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs min-w-[320px]">
+                                <thead class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-4 py-3">用户名称</th>
+                                        <th class="px-4 py-3 w-44">角色类型</th>
+                                        <th class="px-4 py-3 w-24 text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="member-subusers-tbody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
+                        <div class="flex-1 min-w-[140px]">
+                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">新建用户</label>
+                            <input type="text" id="member-new-user-name" maxlength="32" placeholder="用户名称" class="form-input w-full text-sm" />
+                        </div>
+                        <div class="w-full sm:w-40">
+                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">角色</label>
+                            <select id="member-new-user-role" class="form-input w-full text-sm"></select>
+                        </div>
+                        <button type="button" onclick="memberAddSubUser()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 transition shrink-0 h-[42px] sm:h-[42px]">新建用户</button>
+                    </div>
+                    <p id="member-subuser-limit-hint" class="text-[10px] text-slate-400"></p>
+                </div>
+
                 <!-- 订阅等级对比 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- 启航会员 -->
@@ -99,13 +153,16 @@
                                 <p class="flex items-center gap-2"><i class="ph ph-warehouse"></i> 20个供应商管理</p>
                             </div>
                         </div>
-                        <div class="mt-6 pt-4 border-t border-slate-200">
-                            <p class="text-[10px] text-slate-300 line-through font-bold italic">原价 <span id="plan-launch-origin">¥2388</span></p>
-                            <div class="flex items-end gap-1">
-                                <span id="plan-launch-price" class="text-4xl font-mono font-black text-slate-700 tracking-tighter">¥888</span>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase mb-1">/ Year</span>
+                        <div class="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] text-slate-300 line-through font-bold italic">原价 <span id="plan-launch-origin">¥2388</span></p>
+                                <div class="flex items-end gap-1">
+                                    <span id="plan-launch-price" class="text-4xl font-mono font-black text-slate-700 tracking-tighter">¥888</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-1">/ Year</span>
+                                </div>
+                                <p id="plan-launch-discount" class="mt-1 text-[10px] font-black text-brand-600 uppercase tracking-widest">首发折扣计算中...</p>
                             </div>
-                            <p id="plan-launch-discount" class="mt-1 text-[10px] font-black text-brand-600 uppercase tracking-widest">首发折扣计算中...</p>
+                            <button type="button" onclick="memberSubscribePlan('starter')" class="px-6 py-3 rounded-xl border-2 border-slate-800 text-slate-800 text-xs font-black hover:bg-slate-800 hover:text-white transition shrink-0">订阅启航</button>
                         </div>
                     </div>
 
@@ -137,7 +194,7 @@
                                 </div>
                                 <p id="plan-plus-discount" class="text-[10px] font-black text-[#14B8A6] uppercase tracking-widest mt-1">首发折扣计算中...</p>
                             </div>
-                            <button class="mb-1 px-8 py-3 bg-[#14B8A6] text-white rounded-xl font-black text-xs shadow-xl shadow-[#14B8A6]/30 hover:bg-[#0D9488] transition-all active:scale-95">立即升级</button>
+                            <button type="button" onclick="memberSubscribePlan('premium')" class="mb-1 px-8 py-3 bg-[#14B8A6] text-white rounded-xl font-black text-xs shadow-xl shadow-[#14B8A6]/30 hover:bg-[#0D9488] transition-all active:scale-95">立即升级</button>
                         </div>
                     </div>
                 </div>
@@ -158,7 +215,7 @@
                         <div class="flex items-center gap-3 w-full md:w-auto">
                             <div class="bg-white/70 backdrop-blur-sm px-5 py-2 rounded-xl border border-amber-300 text-center flex-1 md:flex-none">
                                 <p class="text-[8px] font-black text-amber-700 uppercase tracking-widest mb-1">专属推荐码</p>
-                                <p class="text-lg font-mono font-black text-amber-900 tracking-tighter">GIGA-JIN-8821</p>
+                                <p id="member-referral-inline" class="text-lg font-mono font-black text-amber-900 tracking-tighter">GIGA-JIN-8821</p>
                             </div>
                             <button onclick="showPoster()" class="px-6 py-4 bg-amber-600 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 hover:bg-amber-700 active:scale-95 transition-all">
                                 <i class="ph ph-image-square-bold text-lg"></i> 生成海报
@@ -323,11 +380,16 @@
                             <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="ph ph-clock-counter-clockwise text-orange-500"></i> 待确认单据 (AI 草稿)</h3>
                             <span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">需人工确认</span>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3 list-scrollbar" id="pending-list">
                             <div onclick="openAuditModal('Ahmed Al-Fayed')" class="p-4 border border-slate-100 rounded-xl hover:border-brand-500 transition-all cursor-pointer bg-slate-50/50 group">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2"><i class="ph ph-microphone-stage text-brand-500"></i><p class="text-xs font-bold text-slate-800">Ahmed Al-Fayed</p></div>
-                                    <span class="text-[9px] text-slate-400 font-mono tracking-tighter">10:42 AM</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[9px] text-slate-400 font-mono tracking-tighter">10:42 AM</span>
+                                        <button onclick="event.stopPropagation();deletePendingDraft(this)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors" title="删除草稿">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="text-[11px] text-slate-500 italic truncate">“已提取订单：金色镂空灯等 2 项商品...”</div>
                             </div>
@@ -354,7 +416,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar" id="inprogress-list">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3 list-scrollbar" id="inprogress-list">
                             <!-- 进行中单据项 1 -->
                             <div onclick="openOrderDetail('INV-2026-0082')" class="p-4 border border-slate-50 rounded-xl bg-white hover:border-brand-500 transition-all cursor-pointer flex justify-between items-center group">
                                 <div>
@@ -362,7 +424,7 @@
                                     <div class="flex items-center gap-2 mt-1">
                                         <span class="text-[9px] text-slate-400 uppercase tracking-tighter">John Smith</span>
                                         <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                        <span class="text-[9px] text-brand-600 font-bold">待仓库捡货</span>
+                                        <span id="order-status-label-INV-2026-0082" class="text-[9px] text-brand-600 font-bold">待仓库捡货</span>
                                     </div>
                                 </div>
                                 <div class="w-10 h-10 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 font-black text-[10px]">85%</div>
@@ -375,7 +437,7 @@
                                     <div class="flex items-center gap-2 mt-1">
                                         <span class="text-[9px] text-slate-400 uppercase tracking-tighter">Satoshi Nakamoto</span>
                                         <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                        <span class="text-[9px] text-orange-500 font-bold">待支付尾款</span>
+                                        <span id="order-status-label-INV-2026-0079" class="text-[9px] text-orange-500 font-bold">待支付尾款</span>
                                     </div>
                                 </div>
                                 <div class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 font-black text-[10px]">60%</div>
@@ -478,7 +540,10 @@
                         <div id="pane-order" class="sub-pane space-y-8">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">订单编号 (系统自动生成)</label><input type="text" value="ORD-2026-0008821" class="form-input font-mono font-bold text-slate-800"></div>
-                                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">预计交货日期</label><input type="date" value="2026-02-28" class="form-input"></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">订单状态</label><select id="audit-order-status" class="form-input font-bold text-brand-600"><option selected>待确认</option><option>待支付尾款</option><option>待仓库捡货</option><option>待发货</option><option>已发货</option><option>已完成</option><option>已退款</option></select></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">客户名称</label><input id="audit-customer-name" type="text" value="Ahmed Al-Fayed" class="form-input bg-slate-50 text-slate-600 font-bold cursor-not-allowed" readonly></div>
+                                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">交货日期</label><input id="audit-delivery-date" type="date" value="2026-04-25" class="form-input bg-slate-50 text-slate-600 cursor-not-allowed" readonly></div>
+                                <div class="md:col-span-2"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">收款账户</label><select id="audit-receipt-account" class="form-input font-bold text-slate-700"><option selected>默认收款账户</option><option>公司对公账户 - 尾号 8201</option><option>支付宝企业账户</option><option>微信商户账户</option></select></div>
                             </div>
 
                             <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
@@ -604,6 +669,36 @@
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar space-y-10">
+                        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">客户名称</label>
+                                <input id="detail-customer-name" type="text" class="form-input bg-slate-50 text-slate-600 font-bold cursor-not-allowed" readonly value="John Smith">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">交货日期</label>
+                                <input id="detail-delivery-date" type="date" class="form-input bg-slate-50 text-slate-600 cursor-not-allowed" readonly value="2026-04-25">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">订单状态</label>
+                                <select id="detail-order-status" class="form-input font-bold text-brand-600" onchange="handleDetailStatusChange(this.value)">
+                                    <option value="待仓库捡货">待仓库捡货</option>
+                                    <option value="待支付尾款">待支付尾款</option>
+                                    <option value="待发货">待发货</option>
+                                    <option value="已发货">已发货</option>
+                                    <option value="已完成">已完成</option>
+                                    <option value="已退款">已退款</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">收款账户</label>
+                                <select id="detail-receipt-account" class="form-input font-bold text-slate-700" onchange="handleDetailReceiptAccountChange(this.value)">
+                                    <option selected>默认收款账户</option>
+                                    <option>公司对公账户 - 尾号 8201</option>
+                                    <option>支付宝企业账户</option>
+                                    <option>微信商户账户</option>
+                                </select>
+                            </div>
+                        </section>
                         <!-- 详情内容区 -->
                         <section>
                             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph ph-package text-brand-500"></i> 单据包含产品列表</h3>
@@ -998,7 +1093,7 @@
                             <div class="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="ph ph-file-arrow-down text-xl"></i></div>
                             <div>
                                 <h2 class="text-sm font-bold text-slate-800" id="detail-purchase-id">PUR-2026-001</h2>
-                                <p class="text-[9px] text-slate-300 font-medium uppercase tracking-tighter">提取源：图片识别 (OCR)</p>
+                                <p class="text-[9px] text-slate-300 font-medium uppercase tracking-tighter" id="detail-purchase-source">提取源：图片识别 (OCR)</p>
                             </div>
                         </div>
                         <button onclick="closePurchaseDetail()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
@@ -1012,19 +1107,7 @@
                                     <thead class="bg-slate-100/50 text-slate-400 font-black uppercase tracking-widest">
                                         <tr class="border-b border-slate-100"><th class="px-6 py-4">产品名 / 规格</th><th class="px-6 py-4 text-center">进货单价</th><th class="px-6 py-4 text-center">数量</th><th class="px-6 py-4 text-right">分项金额</th></tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        <tr>
-                                            <td class="px-6 py-4 font-bold text-slate-800">金色镂空户外灯 (G-8821)<p class="text-[9px] text-slate-400 font-mono tracking-tighter mt-0.5">BATCH: 2602A</p></td>
-                                            <td class="px-6 py-4 text-center font-mono">$10.20 <span class="text-[9px] text-slate-400 italic">(箱入)</span></td>
-                                            <td class="px-6 py-4 text-center font-mono font-bold text-slate-900">1,000</td>
-                                            <td class="px-6 py-4 text-right font-mono font-black text-slate-900">$10,200.00</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="px-6 py-4 font-bold text-slate-800">定制包材组件</td>
-                                            <td class="px-6 py-4 text-center font-mono">$0.46</td>
-                                            <td class="px-6 py-4 text-center font-mono font-bold text-slate-900">5,000</td>
-                                            <td class="px-6 py-4 text-right font-mono font-black text-slate-900">$2,300.00</td>
-                                        </tr>
+                                    <tbody id="detail-purchase-lines" class="divide-y divide-slate-100">
                                     </tbody>
                                 </table>
                             </div>
@@ -1033,13 +1116,88 @@
                         <div class="p-6 bg-slate-900 rounded-2xl text-white shadow-xl relative overflow-hidden flex justify-between items-center">
                             <div class="absolute -right-4 -top-4 opacity-5"><i class="ph ph-currency-circle-dollar text-8xl"></i></div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">进货单总计 (Total Cost)</p>
-                            <p class="text-2xl font-mono font-black text-brand-500">$12,500.00</p>
+                            <p class="text-2xl font-mono font-black text-brand-500" id="detail-purchase-total">¥0.00</p>
                         </div>
                     </div>
 
                     <div class="p-5 border-t border-slate-100 bg-white flex gap-4 shrink-0">
                         <button onclick="closePurchaseDetail()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-400 hover:bg-slate-50 transition-colors">返回管理界面</button>
                         <button class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg flex items-center justify-center gap-2"><i class="ph ph-printer"></i> 打印入库单</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 编辑 / 生成进货单（与产品中心建议联动） -->
+            <div id="purchase-order-form-modal" class="hidden fixed inset-0 z-[125] flex items-center justify-center p-0 md:p-6">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closePurchaseOrderFormModal()"></div>
+                <div class="relative bg-white w-full max-w-5xl max-h-[92vh] md:max-h-[90vh] rounded-none md:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left modal-content-box">
+                    <div class="px-5 md:px-8 py-4 border-b border-slate-100 flex justify-between items-center shrink-0 bg-white">
+                        <h2 class="text-base font-black text-slate-800 tracking-tight" id="po-form-title">编辑进货单</h2>
+                        <button type="button" onclick="closePurchaseOrderFormModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors" aria-label="关闭">
+                            <i class="ph ph-x text-xl text-slate-400"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 no-scrollbar">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">供应商</label>
+                                <select id="po-form-supplier" class="form-input w-full text-sm font-medium text-slate-800" disabled></select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">进货状态</label>
+                                <select id="po-form-status" class="form-input w-full text-sm"></select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">进货日期</label>
+                                <input type="date" id="po-form-date" class="form-input w-full text-sm" />
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-3 gap-2">
+                                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">进货商品明细</h3>
+                                <button type="button" onclick="poFormAddLine()" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 shrink-0">
+                                    <i class="ph ph-plus-circle"></i> 添加商品行
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto border border-slate-200 rounded-xl shadow-inner">
+                                <table class="w-full text-left text-xs min-w-[640px]">
+                                    <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-3 py-2.5 min-w-[180px]">产品</th>
+                                            <th class="px-3 py-2.5 w-24 text-center">数量</th>
+                                            <th class="px-3 py-2.5 w-28 text-center">进货单价</th>
+                                            <th class="px-3 py-2.5 w-24 text-center">单位</th>
+                                            <th class="px-3 py-2.5 w-28 text-center">批次号</th>
+                                            <th class="px-3 py-2.5 w-28 text-right">小计</th>
+                                            <th class="px-3 py-2.5 w-14 text-center">删除</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="po-form-lines-tbody" class="divide-y divide-slate-100 bg-white"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-white shadow-lg" style="background: linear-gradient(100deg, #0f172a 0%, #1e3a8a 55%, #172554 100%);">
+                            <div>
+                                <p class="text-xs font-bold text-white/90 uppercase tracking-widest">进货单总计</p>
+                                <p class="text-[10px] text-white/50">系统自动计算</p>
+                            </div>
+                            <p class="text-xl sm:text-2xl font-mono font-black tracking-tight" id="po-form-total-display">¥0.00</p>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1.5">付款账户</label>
+                            <select id="po-form-payment" class="form-input w-full text-sm">
+                                <option value="对公付款-建行">对公付款-建行</option>
+                                <option value="对公付款-工行">对公付款-工行</option>
+                                <option value="资金池-内部户">资金池-内部户</option>
+                                <option value="支付宝-企业账户">支付宝-企业账户</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="p-4 md:p-5 border-t border-slate-100 bg-white flex flex-col sm:flex-row gap-3 shrink-0">
+                        <button type="button" onclick="closePurchaseOrderFormModal()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">取消</button>
+                        <button type="button" onclick="savePurchaseOrderForm()" class="flex-[2] py-3 rounded-xl bg-slate-900 text-white text-xs font-black shadow-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                            <i class="ph ph-floppy-disk-back"></i> 保存进货单据
+                        </button>
                     </div>
                 </div>
             </div>

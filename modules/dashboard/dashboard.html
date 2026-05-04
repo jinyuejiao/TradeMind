@@ -43,11 +43,16 @@
                 <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="ph ph-clock-counter-clockwise text-orange-500"></i> 待确认单据 (AI 草稿)</h3>
                 <span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">需人工确认</span>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 list-scrollbar" id="pending-list">
                 <div onclick="openAuditModal('Ahmed Al-Fayed')" class="p-4 border border-slate-100 rounded-xl hover:border-brand-500 transition-all cursor-pointer bg-slate-50/50 group">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex items-center gap-2"><i class="ph ph-microphone-stage text-brand-500"></i><p class="text-xs font-bold text-slate-800">Ahmed Al-Fayed</p></div>
-                        <span class="text-[9px] text-slate-400 font-mono tracking-tighter">10:42 AM</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-400 font-mono tracking-tighter">10:42 AM</span>
+                            <button onclick="event.stopPropagation();deletePendingDraft(this)" class="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors" title="删除草稿">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="text-[11px] text-slate-500 italic truncate">"已提取订单：金色镂空灯等 2 项商品..."</div>
                 </div>
@@ -74,7 +79,7 @@
                     </select>
                 </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar" id="inprogress-list">
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 list-scrollbar" id="inprogress-list">
                 <!-- 进行中单据项 1 -->
                 <div onclick="openOrderDetail('INV-2026-0082')" class="p-4 border border-slate-50 rounded-xl bg-white hover:border-brand-500 transition-all cursor-pointer flex justify-between items-center group">
                     <div>
@@ -198,7 +203,10 @@
             <div id="pane-order" class="sub-pane space-y-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">订单编号 (系统自动生成)</label><input type="text" value="ORD-2026-0008821" class="form-input font-mono font-bold text-slate-800"></div>
-                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">预计交货日期</label><input type="date" value="2026-02-28" class="form-input"></div>
+                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">订单状态</label><select id="audit-order-status" class="form-input font-bold text-brand-600"><option selected>待确认</option><option>待支付尾款</option><option>待仓库捡货</option><option>待发货</option><option>已发货</option><option>已完成</option><option>已退款</option></select></div>
+                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">客户名称</label><input id="audit-customer-name" type="text" value="Ahmed Al-Fayed" class="form-input bg-slate-50 text-slate-600 font-bold cursor-not-allowed" readonly></div>
+                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">交货日期</label><input id="audit-delivery-date" type="date" value="2026-04-25" class="form-input bg-slate-50 text-slate-600 cursor-not-allowed" readonly></div>
+                    <div class="md:col-span-2"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">收款账户</label><select id="audit-receipt-account" class="form-input font-bold text-slate-700"><option selected>默认收款账户</option><option>公司对公账户 - 尾号 8201</option><option>支付宝企业账户</option><option>微信商户账户</option></select></div>
                 </div>
 
                 <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
