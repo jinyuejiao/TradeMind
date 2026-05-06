@@ -1,4 +1,5 @@
 <!-- 产品中心模块 -->
+<!-- TM_UI：全行业 base；行业增量由 fragments/{industry}/product-center/*.html 注入 -->
 <div class="w-full p-4 md:p-8 space-y-6 fade-in">
     <!-- 现有产品库 -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -84,6 +85,9 @@
             </button>
         </div>
 
+        <!-- SLOT_FILTER_EXTRA：筛选区下方行业片段（批发为空，外贸见 after-filters.html） -->
+        <div class="px-6 pb-4 bg-white border-b border-slate-50 tm-ui-slot" data-tm-fragment-scope="product-center" data-tm-slot="after-filters"></div>
+
             <div class="overflow-x-auto no-scrollbar">
                 <table class="w-full text-left border-collapse" id="existingProdTable">
                     <thead class="bg-slate-50/50 text-[10px] text-slate-400 font-black uppercase tracking-tighter border-b border-slate-100">
@@ -101,7 +105,6 @@
                 </table>
             </div>
         </div>
-    </div>
 
     <!-- 手机端卡片式布局 -->
     <div class="md:hidden space-y-4" id="mobile-product-cards"></div>

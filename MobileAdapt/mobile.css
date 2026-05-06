@@ -1,4 +1,7 @@
 /* 手机端适配样式 */
+/*
+ * 移动端 max-width 使用 767px：与 Tailwind `md`（min-width:768px）及 MobileAdapt/TM_Responsive.js 一致。
+ */
 
 /* 底部导航栏 */
 .md\:hidden {
@@ -184,7 +187,7 @@
 /* ================= 产品中心移动端适配 ================= */
 
 /* 产品中心筛选器移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     /* 筛选器区域 */
     #category-filter,
     #supplier-filter,
@@ -305,7 +308,7 @@
 }
 
 /* ================= 产品中心移动端优化（对齐网页端信息层级） ================= */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     /* 移动端仅展示卡片，避免和桌面表格重复 */
     #existingProdTable {
         display: none !important;

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  TradeMind — 通用页面骨架参考（不参与当前运行时路由）
+  生产入口：项目根目录 index.html
+
+  与 index.html 的对应关系：
+  - SLOT_SIDEBAR      → <aside data-tm-shell="desktop-sidebar">，片段 Core/partials/desktop-sidebar.html（Adaptation/TM_ShellLoader.js）
+  - SLOT_MOBILE_NAV   → <nav data-tm-shell="mobile-bottom-nav">，片段 Core/partials/mobile-bottom-nav.html（同上）
+  - SLOT_CONTENT      → <main> 内 #content-area / 各 view-section（仍为 index 内联）
+  - 行业模块插槽       → TM_UI_Loader，见 docs/UI_Framework_Guide.md
+
+  断点：Tailwind md = 768px；自定义移动端样式与 TM_Responsive 使用 max-width:767px。
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Base — TradeMind</title>
+</head>
+<body class="tm-layout-shell">
+
+    <!-- ========== SLOT_HEADER：顶栏 / 页眉 ========== -->
+    <!-- SLOT_HEADER -->
+
+    <div class="tm-layout-body flex min-h-screen">
+        <aside class="tm-layout-sidebar">
+            <!-- ========== SLOT_SIDEBAR：桌面主导航（运行时由 TM_ShellLoader 注入 partial） ========== -->
+            <!-- SLOT_SIDEBAR -->
+        </aside>
+
+        <main class="tm-layout-main flex-1 flex flex-col min-w-0">
+            <!-- ========== SLOT_FILTER：筛选条 / 二级工具栏 ========== -->
+            <!-- SLOT_FILTER -->
+
+            <!-- ========== SLOT_CONTENT：主内容 ========== -->
+            <!-- SLOT_CONTENT -->
+
+            <!-- ========== SLOT_FOOTER_AUX：底部辅助（可选） ========== -->
+            <!-- SLOT_FOOTER_AUX -->
+        </main>
+    </div>
+
+    <!-- ========== SLOT_MOBILE_NAV：移动端底栏（fixed，运行时注入 partial） ========== -->
+    <!-- SLOT_MOBILE_NAV -->
+
+    <!-- ========== SLOT_MODALS：全局弹窗挂载点（可选） ========== -->
+    <!-- SLOT_MODALS -->
+
+</body>
+</html>

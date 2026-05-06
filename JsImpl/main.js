@@ -31,11 +31,14 @@ function loadCRM() {
     const timestamp = new Date().getTime();
     fetch(`./modules/crm/crm.html?t=${timestamp}`, { cache: 'no-store' })
         .then(response => response.text())
-        .then(data => {
+        .then(async data => {
             document.getElementById('view-crm').innerHTML = data;
             setTimeout(() => {
                 initCrmAlphabetIndex();
             }, 0);
+            if (window.TM_UI && typeof window.TM_UI.injectSlots === 'function') {
+                await window.TM_UI.injectSlots(document.getElementById('view-crm'));
+            }
         })
         .catch(error => {
             console.error('Error loading CRM:', error);
@@ -47,14 +50,16 @@ function loadProductCenter() {
     const timestamp = new Date().getTime();
     fetch(`./modules/product-center/product-center.html?t=${timestamp}`)
         .then(response => response.text())
-        .then(data => {
+        .then(async data => {
             document.getElementById('view-supply').innerHTML = data;
             // 直接调用产品中心初始化函数
-            setTimeout(() => {
-                if (typeof window.initProductCenter === 'function') {
-                    window.initProductCenter();
-                }
-            }, 50);
+            await new Promise(r => setTimeout(r, 50));
+            if (typeof window.initProductCenter === 'function') {
+                window.initProductCenter();
+            }
+            if (window.TM_UI && typeof window.TM_UI.injectSlots === 'function') {
+                await window.TM_UI.injectSlots(document.getElementById('view-supply'));
+            }
         })
         .catch(error => {
             console.error('Error loading product center:', error);
@@ -1446,6 +1451,13 @@ function scrollCrmToLetter(letter) {
     });
 }
 
+function tmIsMobileLayout() {
+    if (window.TM_Responsive && typeof window.TM_Responsive.isMobileView === 'function') {
+        return window.TM_Responsive.isMobileView();
+    }
+    return window.innerWidth < 768;
+}
+
 /**
 * CRM 手机端详情显示逻辑
 */
@@ -1454,7 +1466,7 @@ function showCrmDetail(customerName) {
     document.getElementById('crm-detail-name').innerText = customerName;
 
     // 2. 针对手机端的显示切换
-    if (window.innerWidth < 768) {
+    if (tmIsMobileLayout()) {
         document.getElementById('crm-list-pane').classList.add('hidden');
         document.getElementById('crm-detail-pane').classList.remove('hidden');
         // 自动回到顶部
@@ -1466,7 +1478,7 @@ function showCrmDetail(customerName) {
  * CRM 手机端返回列表逻辑
  */
 function hideCrmDetail() {
-    if (window.innerWidth < 768) {
+    if (tmIsMobileLayout()) {
         const listPane = document.getElementById('crm-list-pane');
         const detailPane = document.getElementById('crm-detail-pane');
         if (listPane) listPane.classList.remove('hidden');

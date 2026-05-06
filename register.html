@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>注册 — TradeMind 商贸智脑</title>
+    <link rel="stylesheet" href="./CSS/auth.css?v=tm-auth-1">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="auth-body">
+    <main class="auth-main auth-register-wide">
+        <div class="auth-card auth-register-body">
+            <header class="auth-card-header">
+                <div class="auth-logo" aria-hidden="true">
+                    <i class="ph-bold ph-brain"></i>
+                </div>
+                <h1 class="auth-title">TradeMind</h1>
+                <p class="auth-subtitle">商贸智脑<br />杭州云端科技有限公司</p>
+            </header>
+            <div class="auth-card-body">
+                <form id="register-form" onsubmit="tmRegisterSubmit(event)">
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-username">用户名<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-user"></i>
+                            <input class="auth-input" type="text" id="reg-username" name="username" autocomplete="username" required maxlength="64" placeholder="请输入用户名" />
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-email">邮箱<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-envelope-simple"></i>
+                            <input class="auth-input" type="email" id="reg-email" name="email" autocomplete="email" required placeholder="请输入邮箱" />
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-phone">手机号<span class="auth-required">*</span></label>
+                        <div class="auth-input-row">
+                            <div class="auth-input-wrap" style="flex:1">
+                                <i class="ph ph-phone"></i>
+                                <input class="auth-input" type="tel" id="reg-phone" name="phone" autocomplete="tel" required inputmode="numeric" placeholder="请输入手机号" />
+                            </div>
+                            <button type="button" class="auth-btn-sms" onclick="tmSendSmsCode(this)">发送验证码</button>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-sms">短信验证码<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-chat-circle-text"></i>
+                            <input class="auth-input" type="text" id="reg-sms" name="smsCode" required inputmode="numeric" autocomplete="one-time-code" placeholder="请先点击发送验证码，再填写收到的验证码" />
+                        </div>
+                        <p class="auth-hint">未开通短信功能时，可填写任意数字完成流程（以服务端配置为准）</p>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-merchant-type">商户类型<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-storefront"></i>
+                            <select class="auth-select" id="reg-merchant-type" name="merchantType" required>
+                                <option value="">请选择商户类型</option>
+                                <option value="WHOLESALE">批发商户</option>
+                                <option value="FOREIGN">外贸商户</option>
+                                <option value="ECOM">电商商户</option>
+                                <option value="FACTORY">工贸一体商户</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-company">公司名称<span class="auth-optional-tag">选填</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-buildings"></i>
+                            <input class="auth-input" type="text" id="reg-company" name="companyName" placeholder="请输入公司名称" />
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-credit">社会信用代码<span class="auth-optional-tag">选填</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-identification-card"></i>
+                            <input class="auth-input" type="text" id="reg-credit" name="creditCode" placeholder="请输入社会信用代码" />
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-password">密码<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-lock-key"></i>
+                            <input class="auth-input" type="password" id="reg-password" name="password" autocomplete="new-password" required placeholder="请输入密码" />
+                            <button type="button" class="auth-toggle-pwd" onclick="tmTogglePassword('reg-password', this)" aria-label="显示密码">
+                                <i class="ph ph-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-password2">确认密码<span class="auth-required">*</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-lock-key"></i>
+                            <input class="auth-input" type="password" id="reg-password2" name="passwordConfirm" autocomplete="new-password" required placeholder="请再次输入密码" />
+                            <button type="button" class="auth-toggle-pwd" onclick="tmTogglePassword('reg-password2', this)" aria-label="显示密码">
+                                <i class="ph ph-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="reg-invite">邀请码<span class="auth-optional-tag">选填</span></label>
+                        <div class="auth-input-wrap">
+                            <i class="ph ph-key"></i>
+                            <input class="auth-input" type="text" id="reg-invite" name="inviteCode" placeholder="请输入邀请码（选填）" />
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn-primary">注册</button>
+                </form>
+                <p class="auth-footer-links">
+                    已有账号？<a class="auth-link" href="./login.html">立即登录</a>
+                </p>
+                <div class="auth-about">
+                    <a href="#" onclick="alert('TradeMind 商贸智脑'); return false;">关于我们</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="auth-page-footer">
+        © 2026 杭州巨脑科技有限公司 | 浙ICP备2026010257号-1
+    </footer>
+    <script src="./JsImpl/auth-pages.js?v=tm-auth-1"></script>
+</body>
+</html>

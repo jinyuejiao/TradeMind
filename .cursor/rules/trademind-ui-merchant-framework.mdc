@@ -1,0 +1,36 @@
+---
+description: TradeMind 身份感知 UI — 多商户类型扩展（令牌、插槽、片段、壳层）
+globs: "**/*.html,**/fragments/**,**/Adaptation/*.js,**/Core/**/*.html,**/CSS/theme.css,**/MobileAdapt/TM_Responsive.js,**/docs/UI_Framework_Guide.md"
+alwaysApply: false
+---
+
+# 多商户类型 UI 扩展约束
+
+## 分层
+
+- **Core**：`CSS/theme.css` 令牌；`Core/layout_base.html` 仅文档化插槽名；**壳层 HTML** 放 `Core/partials/`，由 `TM_ShellLoader.js` 注入 `data-tm-shell`。
+- **Fragments**：按行业目录 `fragments/{wholesale|foreign|ecom|factory}/{scope}/{slot}.html`，由 `TM_UI_Loader.js` 注入 `[data-tm-slot][data-tm-fragment-scope]`。
+- **Adaptation**：`TM_UI_CONTEXT.industry` / `.role`（Proxy）；勿 **`window.TM_UI = {}` 整对象覆盖**，须保留 `Object.assign` 合并（如 `toast`）。
+
+## 新增行业（MerchantType）
+
+1. `CSS/theme.css`：`[data-merchant-type="XXX"]` 覆盖 `--tm-brand-*-rgb`（勿破坏 Tailwind `rgb(var(...) / <alpha-value>)`）。
+2. `Adaptation/TM_UI_Loader.js`：`INDUSTRY_DIR` 映射目录名（小写）。
+3. 新建 `fragments/<dir>/…` 占位或真实片段；失败或未配置时插槽应清空，避免残留上一行业 DOM。
+
+## 新增模块插槽
+
+在模块 HTML 预留：`<div data-tm-fragment-scope="<scope>" data-tm-slot="<name>"></div>`；`fetch` 完成后对该视图根调用 `TM_UI.injectSlots(root)`。
+
+## 响应式
+
+移动端 CSS 使用 **`max-width: 767px`**，与 `TM_Responsive.isMobileView()`、`tailwind md`（768）一致；勿混用 `768px` 作为 max-width。
+
+## 权限预览
+
+仅对部分角色显示的控件：`data-role="ADMIN"`（或多角色空格分隔）；依赖 `TM_RoleGate.apply()`。
+
+## 禁止事项
+
+- 在 `modules/` 重复整套行业样式；行业差异优先 **片段 + 令牌**。
+- 硬编码覆盖已在 `theme.css` 声明的品牌色（例外须在令牌层新增变量）。

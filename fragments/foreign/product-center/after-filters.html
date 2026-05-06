@@ -1,0 +1,20 @@
+<!-- 外贸行业片段：海关编码 + 汇率看板（继承 brand token） -->
+<div class="flex flex-col lg:flex-row gap-4 w-full">
+    <div class="flex-1 min-w-0 rounded-[var(--tm-radius-3xl)] border border-brand-100 bg-brand-50/40 p-4 flex flex-wrap items-end gap-3">
+        <div class="flex-1 min-w-[200px] space-y-1.5">
+            <label class="text-[10px] font-black text-brand-600 uppercase tracking-widest">海关 HS 编码</label>
+            <input type="text" placeholder="例：9405.40.0000" class="form-input font-mono text-xs rounded-[var(--tm-radius-3xl)] border-brand-100 focus:border-brand-500" />
+        </div>
+        <button type="button" class="px-4 py-2.5 rounded-[var(--tm-radius-3xl)] bg-brand-500 text-white text-xs font-black shadow-lg hover:bg-brand-600 transition-all active:scale-95">
+            校验编码
+        </button>
+    </div>
+    <div class="w-full lg:w-72 shrink-0 rounded-[var(--tm-radius-3xl)] border border-slate-200 bg-white p-4 shadow-sm space-y-2">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">汇率看板</p>
+        <div class="flex justify-between items-baseline">
+            <span class="text-xs font-bold text-slate-500">USD/CNY</span>
+            <span class="text-lg font-mono font-black text-brand-600">7.24</span>
+        </div>
+        <p class="text-[9px] text-slate-400 font-medium">演示数据 · 随 TM_UI_CONTEXT.industry 注入</p>
+    </div>
+</div>

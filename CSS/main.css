@@ -1,9 +1,7 @@
+@import url('./theme.css');
+
+/* 组件局部令牌（保留非品牌语义变量） */
 :root {
-    --brand-primary: #14B8A6;
-    --brand-dark: #0F172A;
-    --slate-bg: #F1F5F9;
-    --text-main: #334155;
-    --risk-high: #F43F5E;
     --gold-light: #fef3c7;
     --gold-dark: #fbbf24;
     --gold-text: #92400e;
@@ -289,7 +287,7 @@ body {
 }
 
 /* --- 手机端 CRM 专用适配样式 --- */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     /* 详情页显示时隐藏列表页 */
     .crm-detail-active #crm-list-pane {
         display: none;
@@ -335,7 +333,11 @@ body {
     }
 }
 
-@media (max-width: 768px) {
+.tm-role-hidden {
+    display: none !important;
+}
+
+@media (max-width: 767px) {
     #main-sidebar {
         position: fixed;
         inset-y: 0;
