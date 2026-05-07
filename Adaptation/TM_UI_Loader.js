@@ -119,7 +119,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         try {
-            var regM = sessionStorage.getItem('tm_register_merchant_type');
+            var regM = localStorage.getItem('tm_tenant_merchant_type') || sessionStorage.getItem('tm_register_merchant_type');
             if (regM && window.TM_UI_CONTEXT) {
                 window.TM_UI_CONTEXT.industry = String(regM).toUpperCase();
             }

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>登录 — TradeMind 商贸智脑</title>
-    <link rel="stylesheet" href="./CSS/auth.css?v=tm-auth-1">
+    <link rel="stylesheet" href="./CSS/auth.css?v=tm-auth-2">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="auth-body auth-body--center">
+<body class="auth-body auth-body--center auth-page-login">
     <main class="auth-main">
         <div class="auth-card">
             <header class="auth-card-header">
@@ -15,9 +15,11 @@
                     <i class="ph-bold ph-brain"></i>
                 </div>
                 <h1 class="auth-title">TradeMind</h1>
-                <p class="auth-subtitle">商贸智脑 · 外贸管理系统</p>
+                <p class="auth-subtitle" id="login-subtitle">商贸智脑 · 外贸管理系统</p>
             </header>
             <div class="auth-card-body">
+                <div id="login-merchant-banner" class="auth-merchant-banner" hidden></div>
+                <p id="login-merchant-hint" class="auth-merchant-hint" hidden></p>
                 <form id="login-form" onsubmit="tmLoginSubmit(event)">
                     <div class="auth-field">
                         <label class="auth-label" for="login-username">用户名<span class="auth-required">*</span></label>
@@ -47,6 +49,8 @@
                 </form>
                 <p class="auth-footer-links">
                     还没有账号？<a class="auth-link" href="./register.html">立即注册</a>
+                    <span class="text-slate-300 mx-1">|</span>
+                    <a class="auth-link" href="./gateway.html">重选商户类型</a>
                 </p>
                 <div class="auth-about">
                     <a href="#" onclick="alert('TradeMind 商贸智脑'); return false;">关于我们</a>
@@ -57,6 +61,6 @@
     <footer class="auth-page-footer">
         © 2026 杭州巨脑科技有限公司 | 浙ICP备2026010257号-1
     </footer>
-    <script src="./JsImpl/auth-pages.js?v=tm-auth-1"></script>
+    <script src="./JsImpl/auth-pages.js?v=tm-auth-2"></script>
 </body>
 </html>

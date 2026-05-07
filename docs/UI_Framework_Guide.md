@@ -3,7 +3,9 @@
 本文档说明在本工程中 **新增原子样式 / 行业片段 / 全站换肤** 的推荐做法。  
 **Cursor 可复制指令与正式工程迁移说明**：见同目录 [`Cursor_商户类型UI扩展_指令集.md`](./Cursor_商户类型UI扩展_指令集.md)；持久规则见仓库 `.cursor/rules/trademind-ui-merchant-framework.mdc`。
 
-**登录 / 注册静态页**：根目录 [`login.html`](../login.html)、[`register.html`](../register.html)，样式 [`CSS/auth.css`](../CSS/auth.css)；注册所选商户类型写入 `sessionStorage.tm_register_merchant_type`，进入主应用后由 `TM_UI_Loader` 同步到 `TM_UI_CONTEXT.industry`。
+**商户类型门户（前置入口）**：根目录 [`gateway.html`](../gateway.html)。用户先选择商户类型后再进入 [`index.html`](../index.html)；未选择时打开主应用会被重定向到门户（调试可加 URL 参数 **`?skipGateway=1`** 跳过）。系统内可通过侧栏 **「切换商户类型」** 或移动端顶栏 **「切换商户」** 返回门户。
+
+**登录 / 注册静态页**：[`login.html`](../login.html)、[`register.html`](../register.html)，样式 [`CSS/auth.css`](../CSS/auth.css)。租户注册所选商户类型写入 **`localStorage.tm_tenant_merchant_type`**（并兼容 `sessionStorage.tm_register_merchant_type`）；**登录页加载时**根据该值设置 **`data-merchant-type`** 与通道说明。主应用 [`Adaptation/TM_UI_Loader.js`](../Adaptation/TM_UI_Loader.js) **优先读取 `localStorage`**。正式环境应在 **登录接口返回租户类型** 后覆盖客户端缓存。
 
 ## 1. 设计令牌（全站风格）
 

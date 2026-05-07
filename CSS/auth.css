@@ -342,3 +342,190 @@ select.auth-select {
 .auth-register-body .auth-card-body {
     padding-bottom: 1.5rem;
 }
+
+/* 登录页：已登记租户商户类型时的通道提示 */
+.auth-merchant-banner {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--tm-brand-600);
+    background: var(--tm-brand-50);
+    border: 1px solid rgba(var(--tm-brand-500-rgb), 0.25);
+    border-radius: var(--tm-radius-3xl);
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.auth-merchant-banner strong {
+    font-weight: 800;
+}
+
+.auth-merchant-hint {
+    margin: -0.35rem 0 1rem;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+/* ========== 商户类型门户 gateway.html ========== */
+.gateway-body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-family: 'Inter', -apple-system, 'Microsoft YaHei', sans-serif;
+    background: var(--tm-surface-page);
+    color: var(--tm-text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.25rem;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
+.gateway-wrap {
+    width: 100%;
+    max-width: 42rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.gateway-header {
+    text-align: center;
+    margin-bottom: 1.75rem;
+}
+
+.gateway-logo {
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: var(--tm-brand-500);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: var(--tm-shadow-brand-lg);
+}
+
+.gateway-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--tm-brand-dark-surface);
+    letter-spacing: -0.02em;
+}
+
+.gateway-lead {
+    margin: 0.5rem 0 0;
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.5;
+    max-width: 22rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.gateway-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 520px) {
+    .gateway-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+}
+
+.gateway-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 1.15rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--tm-radius-3xl);
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    font-family: inherit;
+    color: inherit;
+    box-shadow: var(--tm-shadow-sm);
+}
+
+.gateway-tile:hover {
+    border-color: rgba(var(--tm-brand-500-rgb), 0.45);
+    box-shadow: var(--tm-shadow-brand);
+    transform: translateY(-2px);
+}
+
+.gateway-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--tm-brand-500-rgb), 0.25);
+}
+
+.gateway-tile--current {
+    border-color: var(--tm-brand-500);
+    box-shadow: var(--tm-shadow-brand);
+}
+
+.gateway-tile-icon {
+    font-size: 1.75rem;
+    color: var(--tm-brand-600);
+    margin-bottom: 0.5rem;
+}
+
+.gateway-tile-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.gateway-tile-desc {
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
+.gateway-hint {
+    margin: 1.25rem 0 0;
+    text-align: center;
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    line-height: 1.45;
+}
+
+.gateway-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 1.5rem;
+    font-size: 0.8125rem;
+}
+
+.gateway-nav a {
+    color: var(--tm-brand-600);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.gateway-nav a:hover {
+    text-decoration: underline;
+}
+
+.gateway-nav-dot {
+    color: #cbd5e1;
+}
+
+.gateway-footer {
+    margin-top: 1.5rem;
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    text-align: center;
+}

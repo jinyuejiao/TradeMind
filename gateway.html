@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>选择商户类型 — TradeMind</title>
+    <link rel="stylesheet" href="./CSS/auth.css?v=tm-gateway-1">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="gateway-body">
+    <div class="gateway-wrap">
+        <header class="gateway-header">
+            <div class="gateway-logo"><i class="ph-bold ph-brain"></i></div>
+            <h1 class="gateway-title">TradeMind 商贸智脑</h1>
+            <p class="gateway-lead">请先选择商户类型，系统将加载对应的界面与行业能力</p>
+        </header>
+
+        <div class="gateway-grid">
+            <button type="button" class="gateway-tile" data-gateway-code="WHOLESALE" onclick="tmGatewaySelectAndEnter('WHOLESALE')">
+                <span class="gateway-tile-icon"><i class="ph ph-storefront"></i></span>
+                <span class="gateway-tile-name">批发商户</span>
+                <span class="gateway-tile-desc">档口、批次与渠道供货</span>
+            </button>
+            <button type="button" class="gateway-tile" data-gateway-code="FOREIGN" onclick="tmGatewaySelectAndEnter('FOREIGN')">
+                <span class="gateway-tile-icon"><i class="ph ph-globe-hemisphere-east"></i></span>
+                <span class="gateway-tile-name">外贸商户</span>
+                <span class="gateway-tile-desc">报关、汇率与国际客户</span>
+            </button>
+            <button type="button" class="gateway-tile" data-gateway-code="ECOM" onclick="tmGatewaySelectAndEnter('ECOM')">
+                <span class="gateway-tile-icon"><i class="ph ph-shopping-bag-open"></i></span>
+                <span class="gateway-tile-name">电商商户</span>
+                <span class="gateway-tile-desc">SKU、店铺与平台订单</span>
+            </button>
+            <button type="button" class="gateway-tile" data-gateway-code="FACTORY" onclick="tmGatewaySelectAndEnter('FACTORY')">
+                <span class="gateway-tile-icon"><i class="ph ph-buildings"></i></span>
+                <span class="gateway-tile-name">工贸一体商户</span>
+                <span class="gateway-tile-desc">生产、BOM 与供销协同</span>
+            </button>
+        </div>
+
+        <p class="gateway-hint">点击卡片即进入工作台；可随时在系统内「切换商户类型」返回本页。</p>
+
+        <nav class="gateway-nav">
+            <a href="./login.html">已有账号 · 登录</a>
+            <span class="gateway-nav-dot">·</span>
+            <a href="./register.html">注册租户</a>
+        </nav>
+    </div>
+    <footer class="gateway-footer">© 2026 TradeMind · 门户预览</footer>
+    <script src="./JsImpl/gateway.js?v=tm-gateway-1"></script>
+</body>
+</html>
