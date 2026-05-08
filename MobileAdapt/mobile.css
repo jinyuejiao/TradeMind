@@ -319,40 +319,76 @@
         padding-top: 0.25rem;
     }
 
-    /* 顶部工具条：标题、搜索、动作区分层更清晰 */
-    #view-supply .bg-white.rounded-2xl.border.border-slate-200.shadow-sm.overflow-hidden > .px-6.py-4.border-b.border-slate-50 {
-        padding: 0.875rem 1rem !important;
-        gap: 0.75rem !important;
+    /* 产品库顶栏：标题一行 + 搜索与三图标同行 */
+    #product-library-header {
+        padding: 0.625rem 0.75rem !important;
+        gap: 0.5rem !important;
     }
 
-    #view-supply .bg-white.rounded-2xl.border.border-slate-200.shadow-sm.overflow-hidden > .px-6.py-4.border-b.border-slate-50 h3 {
+    #product-library-header h3 {
         width: 100%;
         text-align: left;
+        letter-spacing: 0.06em;
     }
 
     #inventorySearch {
-        height: 2.5rem;
-        font-size: 0.75rem;
+        height: 2.25rem;
+        font-size: 0.6875rem;
+    }
+
+    #product-library-header .product-library-action-btn {
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    #product-library-header .product-library-action-btn.bg-slate-800 {
+        border: none;
     }
 
     /* 筛选区：横向滑动 + 新增按钮固定可见 */
-    #view-supply .px-6.py-4.border-b.border-slate-50.flex.flex-col.md\:flex-row.justify-between.items-start.md\:items-center.gap-4.bg-white {
-        padding: 0.875rem 1rem !important;
-        gap: 0.625rem !important;
+    /* 筛选条 + 新增：单行横向滚动（勿让新增按钮占满宽导致换行） */
+    #product-filter-toolbar {
+        padding-left: 0.625rem !important;
+        padding-right: 0.625rem !important;
+        gap: 0.25rem !important;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
     }
 
-    #view-supply #category-filter button,
-    #view-supply #supplier-filter button,
-    #view-supply #stock-filter button {
-        font-size: 0.75rem;
-        padding: 0.55rem 0.85rem;
-        border-radius: 0.85rem;
+    #product-filter-toolbar #category-filter button,
+    #product-filter-toolbar #supplier-filter button,
+    #product-filter-toolbar #stock-filter button {
+        font-size: 0.5625rem;
+        padding: 0.28rem 0.38rem;
+        border-radius: 0.5rem;
+        line-height: 1.2;
+        max-height: 1.85rem;
+    }
+
+    #product-filter-toolbar #category-filter button i.ph-tree-structure,
+    #product-filter-toolbar #supplier-filter button i.ph-users,
+    #product-filter-toolbar #stock-filter button i.ph-box {
+        font-size: 0.65rem !important;
     }
 
     #new-product-btn {
-        width: 100%;
+        width: auto !important;
+        min-width: 1.75rem;
+        flex-shrink: 0;
         justify-content: center;
-        border-radius: 0.9rem;
+        border-radius: 0.5rem;
+        padding: 0.28rem 0.38rem !important;
+        max-height: 1.85rem;
+    }
+
+    #new-product-btn i.ph-plus-circle {
+        font-size: 0.8rem !important;
+    }
+
+    #reset-filter-btn {
+        padding: 0.28rem 0.38rem !important;
+        font-size: 0.5625rem !important;
+        border-radius: 0.5rem !important;
+        max-height: 1.85rem;
     }
 
     /* 卡片信息更贴近桌面端阅读体验 */
@@ -373,8 +409,8 @@
 
     /* 紧凑行式产品布局：字体和按钮同比缩小 */
     .mobile-product-row {
-        border-radius: 0.8rem !important;
-        padding: 0.58rem 0.7rem !important;
+        border-radius: 0.65rem !important;
+        padding: 0.42rem 0.65rem !important;
     }
 
     .mobile-product-row .w-9 {
@@ -410,5 +446,112 @@
     .mobile-mini-btn.delete {
         color: #e11d48;
         background: #fff1f2;
+    }
+
+    #mobile-product-pagination {
+        padding: 0.5rem 0.625rem !important;
+    }
+
+    .mobile-product-pagination-summary {
+        font-size: 0.5625rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .mobile-page-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        min-height: 1.65rem;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.5625rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #0f766e;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid rgba(45, 212, 191, 0.45);
+        border-radius: 9999px;
+        box-shadow: 0 1px 2px rgba(15, 118, 110, 0.06);
+    }
+
+    .mobile-page-btn__icon {
+        font-size: 0.65rem !important;
+        line-height: 1;
+        opacity: 0.92;
+    }
+
+    .mobile-page-btn__text {
+        font-size: inherit;
+    }
+
+    .mobile-page-btn:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .mobile-page-btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+        color: #94a3b8;
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        box-shadow: none;
+    }
+}
+
+/* ================= 供应商管理：横向排版 + 过长省略 ================= */
+@media (max-width: 767px) {
+    #view-supplier table.supplier-mgmt-po-table,
+    #view-supplier table.supplier-mgmt-edit-table {
+        table-layout: fixed;
+        width: 100%;
+        writing-mode: horizontal-tb;
+    }
+
+    #view-supplier table.supplier-mgmt-po-table th,
+    #view-supplier table.supplier-mgmt-po-table td,
+    #view-supplier table.supplier-mgmt-edit-table th,
+    #view-supplier table.supplier-mgmt-edit-table td {
+        writing-mode: horizontal-tb;
+        text-orientation: mixed;
+        vertical-align: middle;
+        word-break: keep-all;
+        overflow-wrap: normal;
+    }
+
+    #view-supplier table.supplier-mgmt-po-table .tm-po-date {
+        width: 24%;
+    }
+
+    #view-supplier table.supplier-mgmt-po-table .tm-po-supplier {
+        width: 40%;
+    }
+
+    #view-supplier table.supplier-mgmt-po-table .tm-po-status {
+        width: 22%;
+    }
+
+    #view-supplier table.supplier-mgmt-po-table .tm-po-action {
+        width: 14%;
+    }
+
+    #view-supplier table.supplier-mgmt-edit-table .tm-sup-name {
+        width: 34%;
+    }
+
+    #view-supplier table.supplier-mgmt-edit-table .tm-sup-contact {
+        width: 18%;
+    }
+
+    #view-supplier table.supplier-mgmt-edit-table .tm-sup-phone {
+        width: 30%;
+    }
+
+    #view-supplier table.supplier-mgmt-edit-table .tm-sup-action {
+        width: 18%;
+    }
+
+    #view-supplier #sup-list-view .overflow-x-auto,
+    #view-supplier #sup-supplier-view .overflow-x-auto {
+        overflow-x: visible;
     }
 }

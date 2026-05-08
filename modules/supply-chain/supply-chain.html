@@ -19,21 +19,21 @@
     <div id="sup-list-view" class="fade-in space-y-4">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="overflow-x-auto no-scrollbar">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead class="bg-slate-50/50 text-slate-400 font-bold uppercase tracking-widest border-b border-slate-100">
+                <table class="supplier-mgmt-po-table w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-50/50 text-slate-400 font-bold border-b border-slate-100 md:uppercase md:tracking-widest">
                         <tr>
-                            <th class="px-6 py-4">进货日期</th>
-                            <th class="px-6 py-4">单据编号 / 来源</th>
-                            <th class="px-6 py-4">供应商名称</th>
-                            <th class="px-6 py-4 text-right col-hide-mobile">进货总额</th>
-                            <th class="px-6 py-4 text-center">状态</th>
-                            <th class="px-6 py-4 text-right">操作</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 tm-po-date whitespace-nowrap">进货日期</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 tm-po-supplier whitespace-nowrap overflow-hidden text-ellipsis">供应商名称</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 text-right col-hide-mobile">进货总额</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 text-center tm-po-status whitespace-nowrap">状态</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 text-right tm-po-action whitespace-nowrap">操作</th>
                         </tr>
                     </thead>
                     <tbody id="purchase-orders-tbody" class="divide-y divide-slate-50 text-slate-700">
                     </tbody>
                 </table>
             </div>
+            <div id="purchase-orders-pagination" class="border-t border-slate-100 bg-slate-50/70 px-3 py-2.5"></div>
         </div>
     </div>
 
@@ -48,48 +48,20 @@
         
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="overflow-x-auto no-scrollbar">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead class="bg-slate-50/50 text-slate-400 font-bold uppercase tracking-widest border-b border-slate-100">
+                <table class="supplier-mgmt-edit-table w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-50/50 text-slate-400 font-bold border-b border-slate-100 md:uppercase md:tracking-widest">
                         <tr>
-                            <th class="px-6 py-4">供应商名称</th>
-                            <th class="px-6 py-4">联系人</th>
-                            <th class="px-6 py-4">电话</th>
-                            <th class="px-6 py-4">评分</th>
-                            <th class="px-6 py-4 text-right">操作</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 tm-sup-name whitespace-nowrap overflow-hidden text-ellipsis">供应商名称</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 tm-sup-contact whitespace-nowrap">联系人</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 tm-sup-phone whitespace-nowrap overflow-hidden text-ellipsis">电话</th>
+                            <th class="px-3 py-3 md:px-6 md:py-4 text-right tm-sup-action whitespace-nowrap">操作</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50 text-slate-700">
-                        <tr class="hover:bg-slate-50/80 transition-all">
-                            <td class="px-6 py-4 font-bold text-slate-800">深圳照明科技</td>
-                            <td class="px-6 py-4">张三</td>
-                            <td class="px-6 py-4 font-mono">13800138000</td>
-                            <td class="px-6 py-4"><span class="px-2 py-0.5 bg-green-50 text-green-600 rounded-full font-bold text-[10px]">A+</span></td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-2">
-                                <button onclick="openSupplierEditModal('深圳照明科技', '张三', '13800138000', 'A+')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-                                    <i class="ph ph-pencil text-slate-400"></i>
-                                </button>
-                                <button onclick="confirmDeleteSupplier('深圳照明科技')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-                                    <i class="ph ph-trash text-slate-400 hover:text-risk-high"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition-all">
-                            <td class="px-6 py-4 font-bold text-slate-800">东莞包装制品</td>
-                            <td class="px-6 py-4">李四</td>
-                            <td class="px-6 py-4 font-mono">13900139000</td>
-                            <td class="px-6 py-4"><span class="px-2 py-0.5 bg-red-50 text-red-600 rounded-full font-bold text-[10px]">C-</span></td>
-                            <td class="px-6 py-4 text-right flex justify-end gap-2">
-                                <button onclick="openSupplierEditModal('东莞包装制品', '李四', '13900139000', 'C-')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-                                    <i class="ph ph-pencil text-slate-400"></i>
-                                </button>
-                                <button onclick="confirmDeleteSupplier('东莞包装制品')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-                                    <i class="ph ph-trash text-slate-400 hover:text-risk-high"></i>
-                                </button>
-                            </td>
-                        </tr>
+                    <tbody id="supplier-directory-tbody" class="divide-y divide-slate-50 text-slate-700">
                     </tbody>
                 </table>
             </div>
+            <div id="supplier-directory-pagination" class="border-t border-slate-100 bg-slate-50/70 px-3 py-2.5"></div>
         </div>
     </div>
 </div>

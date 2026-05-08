@@ -99,6 +99,59 @@ window.purchaseOrdersCatalog = window.purchaseOrdersCatalog || [
     }
 ];
 
+/** 演示：补足进货单据条数以便分页验证（每页 20 条） */
+(function padPurchaseOrdersCatalogDemo() {
+    var list = window.purchaseOrdersCatalog;
+    if (!list || list.length >= 21) return;
+    var seeds = list.slice();
+    var n = list.length + 1;
+    while (list.length < 22) {
+        var s = seeds[(n - 1) % seeds.length];
+        var day = ((n * 3) % 27) + 1;
+        list.push({
+            id: 'PUR-2026-' + String(n).padStart(3, '0'),
+            date: '2026-02-' + String(day).padStart(2, '0'),
+            supplier: String(s.supplier || '供应商').replace(/\s*#\d+$/, '') + ' #' + n,
+            total: Math.max(500, Math.round((s.total || 3000) * (0.72 + (n % 5) * 0.07))),
+            status: ['全部入库', '部分入库', '待审核', '审核通过'][n % 4],
+            source: n % 2 === 0 ? '手工录入' : '演示生成',
+            paymentAccount: s.paymentAccount || '对公付款-建行',
+            lines: (s.lines || []).map(function(l) { return Object.assign({}, l); })
+        });
+        n++;
+    }
+})();
+
+/** 供应商名录（供应商编辑 Tab），支持分页 */
+window.supplierDirectory = window.supplierDirectory || [
+    { id: 1, name: '深圳照明科技', contact: '张三', phone: '13800138000', rating: 'A+' },
+    { id: 2, name: '东莞包装制品', contact: '李四', phone: '13900139000', rating: 'C-' }
+];
+
+(function padSupplierDirectoryDemo() {
+    var list = window.supplierDirectory;
+    if (!list || list.length >= 21) return;
+    var seeds = list.slice();
+    var nextId = list.length + 1;
+    while (list.length < 22) {
+        var s = seeds[(nextId - 1) % seeds.length];
+        list.push({
+            id: 1000 + nextId,
+            name: String(s.name || '').replace(/\s*·\s*分部\d+$/, '') + ' · 分部' + nextId,
+            contact: s.contact || '联系人',
+            phone: '138' + String(10000000 + nextId).slice(-8),
+            rating: ['A+', 'A', 'B+', 'B'][nextId % 4]
+        });
+        nextId++;
+    }
+})();
+
+window.supplierDirectoryPage = window.supplierDirectoryPage || 1;
+window.SUPPLIER_DIRECTORY_PAGE_SIZE = 20;
+window.supplierPoListPage = window.supplierPoListPage || 1;
+window.SUPPLIER_PO_PAGE_SIZE = 20;
+window.supplierEditTargetId = null;
+
 window.poFormContext = window.poFormContext || { supplierName: null };
 
 function formatPurchaseDisplayDate(iso) {
@@ -149,26 +202,76 @@ window.removeSupplierPurchaseSuggestion = function(supplierName) {
     if (typeof showToast === 'function') showToast('已移除该供应商的进货建议');
 };
 
-window.refreshPurchaseOrdersTable = function() {
-    const tbody = document.getElementById('purchase-orders-tbody');
-    if (!tbody || !window.purchaseOrdersCatalog) return;
-    const rows = window.purchaseOrdersCatalog.map(po => {
-        const badge = getPurchaseStatusBadgeClass(po.status);
-        return `
-            <tr onclick="openPurchaseDetail('${po.id}')" class="hover:bg-slate-50/80 transition-all cursor-pointer group">
-                <td class="px-6 py-4 font-mono text-slate-400">${formatPurchaseDisplayDate(po.date)}</td>
-                <td class="px-6 py-4">
-                    <p class="font-bold text-slate-800">${po.id}</p>
-                    <p class="text-[9px] text-slate-300 font-medium">提取源：${po.source || '—'}</p>
-                </td>
-                <td class="px-6 py-4"><span class="font-bold text-brand-600">${po.supplier}</span></td>
-                <td class="px-6 py-4 text-right font-mono font-bold col-hide-mobile">${formatCNYAmount(po.total)}</td>
-                <td class="px-6 py-4 text-center"><span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${badge}">${po.status}</span></td>
-                <td class="px-6 py-4 text-right"><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500 transition-colors"></i></td>
-            </tr>
-        `;
+function supplierMgmtPaginationHtml(page, totalPages, total, pageSize, prevFn, nextFn) {
+    var prevDis = page <= 1 ? 'disabled' : '';
+    var nextDis = page >= totalPages ? 'disabled' : '';
+    var btnCls = 'inline-flex items-center justify-center gap-1 min-h-[2rem] px-3 py-1.5 rounded-full border border-teal-200 bg-white text-[11px] font-bold text-teal-700 shadow-sm hover:bg-teal-50 disabled:opacity-40 disabled:pointer-events-none disabled:text-slate-400 disabled:border-slate-200 transition-colors';
+    return (
+        '<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">' +
+        '<p class="text-[10px] sm:text-[11px] text-slate-500 leading-snug text-center sm:text-left">共 ' + total + ' 条，第 ' + page + '/' + totalPages + ' 页，每页 ' + pageSize + ' 条</p>' +
+        '<div class="flex gap-2 justify-center sm:justify-end">' +
+        '<button type="button" class="' + btnCls + '" ' + prevDis + ' onclick="' + prevFn + '"><i class="ph ph-caret-left"></i>上一页</button>' +
+        '<button type="button" class="' + btnCls + '" ' + nextDis + ' onclick="' + nextFn + '">下一页<i class="ph ph-caret-right"></i></button>' +
+        '</div></div>'
+    );
+}
+
+window.renderPurchaseOrdersTablePaged = function() {
+    var tbody = document.getElementById('purchase-orders-tbody');
+    var pagEl = document.getElementById('purchase-orders-pagination');
+    var catalog = window.purchaseOrdersCatalog || [];
+    var pageSize = window.SUPPLIER_PO_PAGE_SIZE || 20;
+    if (!tbody) return;
+
+    var page = window.supplierPoListPage || 1;
+    var totalPages = Math.max(1, Math.ceil(catalog.length / pageSize));
+    if (page > totalPages) page = totalPages;
+    if (page < 1) page = 1;
+    window.supplierPoListPage = page;
+
+    if (catalog.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-slate-400 text-xs">暂无进货单据</td></tr>';
+        if (pagEl) pagEl.innerHTML = '';
+        return;
+    }
+
+    var start = (page - 1) * pageSize;
+    var slice = catalog.slice(start, start + pageSize);
+
+    tbody.innerHTML = slice.map(function(po) {
+        var badge = getPurchaseStatusBadgeClass(po.status);
+        var sup = String(po.supplier || '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        var pidAttr = JSON.stringify(po.id != null ? po.id : '');
+        return (
+            '<tr onclick="openPurchaseDetail(' + pidAttr + ')" class="hover:bg-slate-50/80 transition-all cursor-pointer group">' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 tm-po-date font-mono text-slate-400 whitespace-nowrap">' + formatPurchaseDisplayDate(po.date) + '</td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 tm-po-supplier"><span class="block font-bold text-brand-600 truncate" title="' + sup + '">' + sup + '</span></td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 text-right font-mono font-bold col-hide-mobile">' + formatCNYAmount(po.total) + '</td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 text-center tm-po-status"><span class="inline-flex max-w-full whitespace-nowrap px-2 py-0.5 rounded-full font-bold text-[10px] ' + badge + '">' + po.status + '</span></td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 text-right tm-po-action align-middle"><i class="ph ph-caret-right text-slate-300 group-hover:text-brand-500 transition-colors"></i></td>' +
+            '</tr>'
+        );
     }).join('');
-    tbody.innerHTML = rows;
+
+    if (pagEl) {
+        pagEl.innerHTML = supplierMgmtPaginationHtml(page, totalPages, catalog.length, pageSize, 'window.tmSupplierPoPrevPage()', 'window.tmSupplierPoNextPage()');
+    }
+};
+
+window.tmSupplierPoPrevPage = function() {
+    window.supplierPoListPage = (window.supplierPoListPage || 1) - 1;
+    window.renderPurchaseOrdersTablePaged();
+};
+
+window.tmSupplierPoNextPage = function() {
+    window.supplierPoListPage = (window.supplierPoListPage || 1) + 1;
+    window.renderPurchaseOrdersTablePaged();
+};
+
+/** 刷新进货单据表（默认回到第 1 页，保存新单后使用） */
+window.refreshPurchaseOrdersTable = function() {
+    window.supplierPoListPage = 1;
+    window.renderPurchaseOrdersTablePaged();
 };
 
 function buildPoStatusOptionsHtml(selected) {
@@ -424,6 +527,9 @@ function loadSupplier() {
             document.getElementById('view-supplier').innerHTML = data;
             if (typeof window.refreshPurchaseOrdersTable === 'function') {
                 window.refreshPurchaseOrdersTable();
+            }
+            if (typeof window.renderSupplierDirectoryTable === 'function') {
+                window.renderSupplierDirectoryTable(true);
             }
         })
         .catch(error => {
@@ -1840,27 +1946,36 @@ function showToast(message) {
     }, 2000);
 }
 
-// 供应商编辑相关函数
-function openSupplierEditModal(supplierName, contact, phone, rating) {
-    const modal = document.getElementById('supplier-edit-modal');
-    if (modal) {
-        // 填充表单数据
-        if (supplierName) {
-            document.getElementById('supplier-name').value = supplierName;
+// 供应商编辑相关函数（编辑传入 id；新增无参）
+function openSupplierEditModal(supplierId) {
+    var modal = document.getElementById('supplier-edit-modal');
+    if (!modal) return;
+
+    window.supplierEditTargetId = typeof supplierId === 'number' ? supplierId : null;
+
+    var nameEl = document.getElementById('supplier-name');
+    var contactEl = document.getElementById('supplier-contact');
+    var phoneEl = document.getElementById('supplier-phone');
+    var ratingEl = document.getElementById('supplier-rating');
+    if (!nameEl || !contactEl || !phoneEl || !ratingEl) return;
+
+    if (window.supplierEditTargetId != null) {
+        var s = (window.supplierDirectory || []).find(function(x) { return x.id === window.supplierEditTargetId; });
+        if (s) {
+            nameEl.value = s.name || '';
+            contactEl.value = s.contact || '';
+            phoneEl.value = s.phone || '';
+            ratingEl.value = s.rating || 'A+';
         }
-        if (contact) {
-            document.getElementById('supplier-contact').value = contact;
-        }
-        if (phone) {
-            document.getElementById('supplier-phone').value = phone;
-        }
-        if (rating) {
-            document.getElementById('supplier-rating').value = rating;
-        }
-        
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    } else {
+        nameEl.value = '';
+        contactEl.value = '';
+        phoneEl.value = '';
+        ratingEl.value = 'A+';
     }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeSupplierEditModal() {
@@ -1872,18 +1987,44 @@ function closeSupplierEditModal() {
 }
 
 function saveSupplierEdit() {
-    // 获取表单数据
-    const name = document.getElementById('supplier-name').value;
-    const contact = document.getElementById('supplier-contact').value;
-    const phone = document.getElementById('supplier-phone').value;
-    const rating = document.getElementById('supplier-rating').value;
-    
-    // 模拟保存操作
-    console.log('保存供应商信息:', { name, contact, phone, rating });
-    
-    // 关闭弹窗并显示提示
+    var name = document.getElementById('supplier-name').value.trim();
+    var contact = document.getElementById('supplier-contact').value.trim();
+    var phone = document.getElementById('supplier-phone').value.trim();
+    var rating = document.getElementById('supplier-rating').value;
+
+    if (!name || !contact || !phone) {
+        alert('请填写供应商名称、联系人与电话。');
+        return;
+    }
+
+    if (!window.supplierDirectory) window.supplierDirectory = [];
+
+    var wasNew = window.supplierEditTargetId == null;
+
+    if (window.supplierEditTargetId != null) {
+        window.supplierDirectory = window.supplierDirectory.map(function(s) {
+            return s.id === window.supplierEditTargetId
+                ? Object.assign({}, s, { name: name, contact: contact, phone: phone, rating: rating })
+                : s;
+        });
+    } else {
+        window.supplierDirectory.push({
+            id: Date.now(),
+            name: name,
+            contact: contact,
+            phone: phone,
+            rating: rating
+        });
+    }
+
+    window.supplierEditTargetId = null;
     closeSupplierEditModal();
-    showToast('供应商信息已保存');
+    if (typeof window.renderSupplierDirectoryTable === 'function') {
+        window.renderSupplierDirectoryTable(wasNew);
+    }
+    if (typeof showToast === 'function') {
+        showToast('供应商信息已保存');
+    }
 }
 
 // 仓库管理相关函数
@@ -3196,10 +3337,83 @@ function switchSupplierView(mode) {
     }
 }
 
-function confirmDeleteSupplier(supplierName) {
-    if (confirm(`确定要删除供应商 "${supplierName}" 吗？`)) {
-        // 模拟删除操作
-        showToast(`供应商 "${supplierName}" 已删除`);
+window.renderSupplierDirectoryTable = function(resetPage) {
+    var tbody = document.getElementById('supplier-directory-tbody');
+    var pagEl = document.getElementById('supplier-directory-pagination');
+    var list = window.supplierDirectory || [];
+    var pageSize = window.SUPPLIER_DIRECTORY_PAGE_SIZE || 20;
+    if (!tbody) return;
+
+    if (resetPage) window.supplierDirectoryPage = 1;
+
+    var page = window.supplierDirectoryPage || 1;
+    var totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+    if (page > totalPages) page = totalPages;
+    if (page < 1) page = 1;
+    window.supplierDirectoryPage = page;
+
+    function escCell(t) {
+        return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    }
+    function escTitle(t) {
+        return String(t == null ? '' : t).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-slate-400 text-xs">暂无供应商，请点击新增</td></tr>';
+        if (pagEl) pagEl.innerHTML = '';
+        return;
+    }
+
+    var start = (page - 1) * pageSize;
+    var slice = list.slice(start, start + pageSize);
+
+    tbody.innerHTML = slice.map(function(s) {
+        var nm = escCell(s.name);
+        var ct = escCell(s.contact);
+        var ph = escCell(s.phone);
+        var titN = escTitle(s.name);
+        var titC = escTitle(s.contact);
+        var titP = escTitle(s.phone);
+        return (
+            '<tr class="hover:bg-slate-50/80 transition-all">' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 tm-sup-name-cell"><span class="block font-bold text-slate-800 truncate" title="' + titN + '">' + nm + '</span></td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 tm-sup-contact-cell"><span class="block truncate" title="' + titC + '">' + ct + '</span></td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 tm-sup-phone-cell"><span class="block font-mono truncate" title="' + titP + '">' + ph + '</span></td>' +
+            '<td class="px-3 py-3 md:px-6 md:py-4 text-right align-middle tm-sup-action-cell">' +
+            '<div class="flex justify-end gap-2">' +
+            '<button type="button" onclick="openSupplierEditModal(' + s.id + ')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors shrink-0" title="编辑"><i class="ph ph-pencil text-slate-400"></i></button>' +
+            '<button type="button" onclick="confirmDeleteSupplier(' + s.id + ')" class="p-1.5 hover:bg-slate-100 rounded-full transition-colors shrink-0" title="删除"><i class="ph ph-trash text-slate-400 hover:text-risk-high"></i></button>' +
+            '</div></td></tr>'
+        );
+    }).join('');
+
+    if (pagEl) {
+        pagEl.innerHTML = supplierMgmtPaginationHtml(page, totalPages, list.length, pageSize, 'window.tmSupplierDirectoryPrevPage()', 'window.tmSupplierDirectoryNextPage()');
+    }
+};
+
+window.tmSupplierDirectoryPrevPage = function() {
+    window.supplierDirectoryPage = (window.supplierDirectoryPage || 1) - 1;
+    window.renderSupplierDirectoryTable(false);
+};
+
+window.tmSupplierDirectoryNextPage = function() {
+    window.supplierDirectoryPage = (window.supplierDirectoryPage || 1) + 1;
+    window.renderSupplierDirectoryTable(false);
+};
+
+function confirmDeleteSupplier(supplierId) {
+    var list = window.supplierDirectory || [];
+    var s = list.find(function(x) { return x.id === supplierId; });
+    if (!s) return;
+    if (!confirm('确定要删除供应商「' + s.name + '」吗？')) return;
+    window.supplierDirectory = list.filter(function(x) { return x.id !== supplierId; });
+    if (typeof window.renderSupplierDirectoryTable === 'function') {
+        window.renderSupplierDirectoryTable(false);
+    }
+    if (typeof showToast === 'function') {
+        showToast('供应商「' + s.name + '」已删除');
     }
 }
 
@@ -3289,6 +3503,7 @@ window.bizPaymentAccounts = window.bizPaymentAccounts || [
         accountName: 'TradeMind 主收款',
         accountNo: 'pay-trademind-001',
         holder: '杭州巨猿科技有限公司',
+        balance: 125430.5,
         isDefaultReceive: true,
         isDefaultPay: false
     },
@@ -3298,6 +3513,7 @@ window.bizPaymentAccounts = window.bizPaymentAccounts || [
         accountName: 'TradeMind 采购付款',
         accountNo: 'wxid_tm_pay_002',
         holder: '杭州巨猿科技有限公司',
+        balance: 43820,
         isDefaultReceive: false,
         isDefaultPay: true
     },
@@ -3307,14 +3523,29 @@ window.bizPaymentAccounts = window.bizPaymentAccounts || [
         accountName: '招商银行对公户',
         accountNo: '6225 88** **** 2026',
         holder: '杭州巨猿科技有限公司',
+        balance: 892000,
         isDefaultReceive: false,
         isDefaultPay: false
     }
 ];
 
+/** 账户出入账流水演示数据（按账户 ID 关联） */
+window.bizAccountTransactions = window.bizAccountTransactions || [
+    { id: 101, accountId: 1, type: '收款', counterparty: '华东经销-建行对公 6222****8801', amount: 56000, date: '2026-02-22', balance: 125430.5 },
+    { id: 102, accountId: 1, type: '付款', counterparty: '深圳照明科技-招行 6225****2026', amount: -18500.25, date: '2026-02-19', balance: 69430.25 },
+    { id: 103, accountId: 1, type: '收款', counterparty: '线上商城聚合清算', amount: 12800, date: '2026-02-15', balance: 87930.25 },
+    { id: 104, accountId: 1, type: '付款', counterparty: '物流服务-银联代扣', amount: -3200, date: '2026-02-10', balance: 75130.25 },
+    { id: 105, accountId: 2, type: '付款', counterparty: '东莞包装制品-对公 8833****9912', amount: -9200, date: '2026-02-21', balance: 43820 },
+    { id: 106, accountId: 2, type: '收款', counterparty: '华南批发商回款', amount: 24000, date: '2026-02-18', balance: 53020 },
+    { id: 107, accountId: 2, type: '付款', counterparty: '腾讯广告预存扣款', amount: -8000, date: '2026-02-05', balance: 29020 },
+    { id: 108, accountId: 3, type: '收款', counterparty: '出口退税入账', amount: 156000, date: '2026-02-20', balance: 892000 },
+    { id: 109, accountId: 3, type: '付款', counterparty: '原材料期货保证金', amount: -48000, date: '2026-02-17', balance: 736000 }
+];
+
 window.bizAccountEditId = null;
 window.bizAccountDeleteId = null;
 window.bizAccountDetailId = null;
+window.bizAccountLedgerAccountId = null;
 
 window.validateBizAccountNo = function(type, accountNo) {
     const raw = accountNo.trim();
@@ -3402,20 +3633,21 @@ window.renderBizPaymentAccounts = function() {
         <li class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-slate-50/70 transition-all">
             <div class="min-w-0">
                 <p class="text-sm font-bold text-slate-800 truncate">${account.accountName}</p>
+                <p class="text-[10px] font-mono text-slate-500 mt-0.5 tabular-nums">${formatCNYAmount(account.balance != null ? account.balance : 0)}</p>
                 <div class="flex items-center gap-1.5 mt-1">
                     ${account.isDefaultReceive ? '<span class="px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-600 text-[9px] font-bold">收</span>' : ''}
                     ${account.isDefaultPay ? '<span class="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[9px] font-bold">付</span>' : ''}
                 </div>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
-                <button onclick="window.openBizAccountDetailModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="详情">
-                    <i class="ph ph-eye text-sm"></i>
+            <div class="flex items-center gap-0.5 md:gap-1 shrink-0">
+                <button type="button" onclick="window.openBizAccountDetailModal(${account.id})" class="w-8 h-8 md:w-7 md:h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center" title="查看详情">
+                    <i class="ph ph-eye text-base md:text-sm"></i>
                 </button>
-                <button onclick="window.openBizAccountModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors" title="编辑">
-                    <i class="ph ph-pencil-simple text-sm"></i>
+                <button type="button" onclick="window.openBizAccountLedgerModal(${account.id})" class="w-8 h-8 md:w-7 md:h-7 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors flex items-center justify-center" title="账户流水">
+                    <i class="ph ph-arrows-left-right text-base md:text-sm"></i>
                 </button>
-                <button onclick="window.openBizAccountDeleteModal(${account.id})" class="w-7 h-7 rounded-lg text-slate-400 hover:text-risk-high hover:bg-rose-50 transition-colors" title="删除">
-                    <i class="ph ph-trash text-sm"></i>
+                <button type="button" onclick="window.openBizAccountDeleteModal(${account.id})" class="w-8 h-8 md:w-7 md:h-7 rounded-lg text-slate-400 hover:text-risk-high hover:bg-rose-50 transition-colors flex items-center justify-center" title="删除">
+                    <i class="ph ph-trash text-base md:text-sm"></i>
                 </button>
             </div>
         </li>
@@ -3434,6 +3666,7 @@ window.openBizAccountDetailModal = function(accountId) {
     const typeEl = document.getElementById('biz-detail-type');
     const noEl = document.getElementById('biz-detail-no');
     const holderEl = document.getElementById('biz-detail-holder');
+    const balanceEl = document.getElementById('biz-detail-balance');
     const receiveEl = document.getElementById('biz-detail-default-receive');
     const payEl = document.getElementById('biz-detail-default-pay');
 
@@ -3441,10 +3674,18 @@ window.openBizAccountDetailModal = function(accountId) {
     if (typeEl) typeEl.innerText = account.type;
     if (noEl) noEl.innerText = account.accountNo;
     if (holderEl) holderEl.innerText = account.holder;
+    if (balanceEl) balanceEl.innerText = formatCNYAmount(account.balance != null ? account.balance : 0);
     if (receiveEl) receiveEl.classList.toggle('hidden', !account.isDefaultReceive);
     if (payEl) payEl.classList.toggle('hidden', !account.isDefaultPay);
 
     modal.classList.remove('hidden');
+};
+
+window.openBizAccountEditFromDetail = function() {
+    const id = window.bizAccountDetailId;
+    if (id == null) return;
+    window.closeBizAccountDetailModal();
+    window.openBizAccountModal(id);
 };
 
 window.closeBizAccountDetailModal = function() {
@@ -3465,27 +3706,30 @@ window.openBizAccountModal = function(accountId) {
     const nameEl = document.getElementById('biz-account-name');
     const noEl = document.getElementById('biz-account-no');
     const holderEl = document.getElementById('biz-account-holder');
+    const balanceEl = document.getElementById('biz-account-balance');
     const receiveEl = document.getElementById('biz-account-default-receive');
     const payEl = document.getElementById('biz-account-default-pay');
     const titleEl = document.getElementById('biz-account-modal-title');
 
     if (window.bizAccountEditId === null) {
-        if (titleEl) titleEl.innerText = '新增首付款账户';
+        if (titleEl) titleEl.innerText = '新增收付款账户';
         if (typeEl) typeEl.value = '支付宝账户';
         if (nameEl) nameEl.value = '';
         if (noEl) noEl.value = '';
         if (holderEl) holderEl.value = '';
+        if (balanceEl) balanceEl.value = '0.00';
         if (receiveEl) receiveEl.checked = false;
         if (payEl) payEl.checked = false;
     } else {
         const target = window.bizPaymentAccounts.find(item => item.id === window.bizAccountEditId);
         if (!target) return;
 
-        if (titleEl) titleEl.innerText = '编辑首付款账户';
+        if (titleEl) titleEl.innerText = '编辑收付款账户';
         if (typeEl) typeEl.value = target.type;
         if (nameEl) nameEl.value = target.accountName;
         if (noEl) noEl.value = target.accountNo;
         if (holderEl) holderEl.value = target.holder;
+        if (balanceEl) balanceEl.value = String(target.balance != null ? target.balance : 0);
         if (receiveEl) receiveEl.checked = !!target.isDefaultReceive;
         if (payEl) payEl.checked = !!target.isDefaultPay;
     }
@@ -3506,6 +3750,7 @@ window.saveBizAccount = function() {
     const nameEl = document.getElementById('biz-account-name');
     const noEl = document.getElementById('biz-account-no');
     const holderEl = document.getElementById('biz-account-holder');
+    const balanceEl = document.getElementById('biz-account-balance');
     const receiveEl = document.getElementById('biz-account-default-receive');
     const payEl = document.getElementById('biz-account-default-pay');
 
@@ -3514,9 +3759,16 @@ window.saveBizAccount = function() {
     const accountName = nameEl.value.trim();
     const accountNo = noEl.value.trim();
     const holder = holderEl.value.trim();
+    const balanceRaw = balanceEl ? (balanceEl.value !== '' ? balanceEl.value.trim() : '0') : '0';
+    const balanceNum = Number(balanceRaw);
 
     if (!accountName || !accountNo || !holder) {
         alert('请完善账户名称、账户号和账户归属主体。');
+        return;
+    }
+
+    if (Number.isNaN(balanceNum) || balanceNum < 0) {
+        alert('账户余额须为非负数字。');
         return;
     }
 
@@ -3531,6 +3783,7 @@ window.saveBizAccount = function() {
         accountName: accountName,
         accountNo: validation.normalized,
         holder: holder,
+        balance: balanceNum,
         isDefaultReceive: receiveEl.checked,
         isDefaultPay: payEl.checked
     };
@@ -3590,6 +3843,137 @@ window.deleteBizAccount = function() {
     window.closeBizAccountDeleteModal();
     if (typeof showToast === 'function') {
         showToast('账户已删除');
+    }
+};
+
+function bizLedgerCsvEscape(val) {
+    const s = String(val == null ? '' : val);
+    if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+}
+
+function bizFormatSignedCurrency(amount) {
+    const n = Number(amount) || 0;
+    const sign = n >= 0 ? '+' : '-';
+    return sign + formatCNYAmount(Math.abs(n));
+}
+
+window.getBizLedgerFilteredRows = function() {
+    const id = window.bizAccountLedgerAccountId;
+    if (id == null) return [];
+    const startEl = document.getElementById('biz-ledger-date-start');
+    const endEl = document.getElementById('biz-ledger-date-end');
+    const start = startEl && startEl.value ? startEl.value : '1970-01-01';
+    const end = endEl && endEl.value ? endEl.value : '2999-12-31';
+    const rows = (window.bizAccountTransactions || []).filter(function(t) {
+        return t.accountId === id && String(t.date) >= start && String(t.date) <= end;
+    });
+    rows.sort(function(a, b) {
+        const d = String(b.date).localeCompare(String(a.date));
+        return d !== 0 ? d : (b.id || 0) - (a.id || 0);
+    });
+    return rows;
+};
+
+window.renderBizAccountLedgerTable = function() {
+    const tbody = document.getElementById('biz-ledger-tbody');
+    const emptyEl = document.getElementById('biz-ledger-empty');
+    if (!tbody) return;
+
+    const rows = window.getBizLedgerFilteredRows();
+    if (emptyEl) emptyEl.classList.toggle('hidden', rows.length > 0);
+
+    if (rows.length === 0) {
+        tbody.innerHTML = '';
+        return;
+    }
+
+    tbody.innerHTML = rows.map(function(row) {
+        const typeCls = row.type === '收款'
+            ? 'bg-emerald-50 text-emerald-700'
+            : 'bg-rose-50 text-rose-700';
+        const cpPlain = String(row.counterparty || '—');
+        const cpHtml = cpPlain.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const cpTitle = cpPlain.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-3 py-2.5 whitespace-nowrap"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${typeCls}">${row.type}</span></td>
+                <td class="px-3 py-2.5 max-w-[200px] md:max-w-xs"><span class="block truncate" title="${cpTitle}">${cpHtml}</span></td>
+                <td class="px-3 py-2.5 text-right font-mono font-bold whitespace-nowrap tabular-nums ${(Number(row.amount) || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${bizFormatSignedCurrency(row.amount)}</td>
+                <td class="px-3 py-2.5 font-mono text-slate-500 whitespace-nowrap">${row.date || '—'}</td>
+                <td class="px-3 py-2.5 text-right font-mono font-bold text-slate-800 whitespace-nowrap tabular-nums">${formatCNYAmount(row.balance != null ? row.balance : 0)}</td>
+            </tr>`;
+    }).join('');
+};
+
+window.openBizAccountLedgerModal = function(accountId) {
+    const acc = window.bizPaymentAccounts.find(function(a) { return a.id === accountId; });
+    if (!acc) return;
+
+    window.bizAccountLedgerAccountId = accountId;
+    const modal = document.getElementById('biz-account-ledger-modal');
+    const sub = document.getElementById('biz-ledger-subtitle');
+    if (sub) {
+        sub.textContent = acc.accountName + ' · ' + acc.accountNo;
+    }
+
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 120);
+
+    const startEl = document.getElementById('biz-ledger-date-start');
+    const endEl = document.getElementById('biz-ledger-date-end');
+    if (startEl) startEl.value = start.toISOString().slice(0, 10);
+    if (endEl) endEl.value = end.toISOString().slice(0, 10);
+
+    window.renderBizAccountLedgerTable();
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeBizAccountLedgerModal = function() {
+    const modal = document.getElementById('biz-account-ledger-modal');
+    if (modal) modal.classList.add('hidden');
+    window.bizAccountLedgerAccountId = null;
+};
+
+window.exportBizAccountLedgerExcel = function() {
+    const id = window.bizAccountLedgerAccountId;
+    const acc = id != null ? window.bizPaymentAccounts.find(function(a) { return a.id === id; }) : null;
+    const rows = window.getBizLedgerFilteredRows();
+
+    const headers = ['类型', '对方账号', '金额', '日期', '账户余额'];
+    const lines = [headers.map(bizLedgerCsvEscape).join(',')];
+    rows.forEach(function(row) {
+        const amt = Number(row.amount) || 0;
+        const amtCell = bizFormatSignedCurrency(amt);
+        const balCell = formatCNYAmount(row.balance != null ? row.balance : 0);
+        lines.push([
+            bizLedgerCsvEscape(row.type),
+            bizLedgerCsvEscape(row.counterparty),
+            bizLedgerCsvEscape(amtCell),
+            bizLedgerCsvEscape(row.date),
+            bizLedgerCsvEscape(balCell)
+        ].join(','));
+    });
+
+    const csv = '\ufeff' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const startEl = document.getElementById('biz-ledger-date-start');
+    const endEl = document.getElementById('biz-ledger-date-end');
+    const ds = startEl && startEl.value ? startEl.value : 'all';
+    const de = endEl && endEl.value ? endEl.value : 'all';
+    const safeName = acc ? 'ledger_' + String(acc.id) + '_' + ds + '_' + de + '.csv' : 'ledger_export.csv';
+    a.href = url;
+    a.download = safeName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (typeof showToast === 'function') {
+        showToast(rows.length === 0 ? '当前筛选无数据，已导出表头' : '已导出 ' + rows.length + ' 条流水（Excel 可直接打开 CSV）');
     }
 };
 
