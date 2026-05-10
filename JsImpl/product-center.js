@@ -1,6 +1,6 @@
 console.log('=== product-center.js 加载成功 ===');
 
-// 产品数据模型
+// 产品数据模型（库存基本单位为「当前库存总量」字段；单位换算用于展示与单据）
 let products = [
     {
         id: 1,
@@ -15,7 +15,14 @@ let products = [
         stock: 1240,
         salesVolume: 5820,
         icon: 'lightbulb',
-        stockStatus: '充足'
+        stockStatus: '充足',
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__',
+        warning_stock: 200
     },
     {
         id: 2,
@@ -31,7 +38,13 @@ let products = [
         salesVolume: 3250,
         icon: 'layout',
         stockStatus: '缺货',
-        warning_stock: 120
+        warning_stock: 120,
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__'
     },
     {
         id: 3,
@@ -46,7 +59,14 @@ let products = [
         stock: 380,
         salesVolume: 8450,
         icon: 'fan',
-        stockStatus: '预警'
+        stockStatus: '预警',
+        baseUnit: '根',
+        unitConversions: [{ unit: '箱', perBase: 200 }, { unit: '包', perBase: 10 }],
+        warehouseStock: {},
+        description: '无叶挂脖设计，三档风速可调。',
+        defaultPurchaseUnit: '箱',
+        defaultSalesUnit: '包',
+        warning_stock: 400
     },
     {
         id: 4,
@@ -61,7 +81,14 @@ let products = [
         stock: 1680,
         salesVolume: 4580,
         icon: 'sun',
-        stockStatus: '充足'
+        stockStatus: '充足',
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__',
+        warning_stock: 200
     },
     {
         id: 5,
@@ -76,7 +103,14 @@ let products = [
         stock: 210,
         salesVolume: 2150,
         icon: 'tent',
-        stockStatus: '充足'
+        stockStatus: '充足',
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__',
+        warning_stock: 200
     },
     {
         id: 6,
@@ -92,7 +126,13 @@ let products = [
         salesVolume: 920,
         icon: 'snowflake',
         stockStatus: '缺货',
-        warning_stock: 50
+        warning_stock: 50,
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__'
     }
 ];
 
@@ -116,10 +156,76 @@ let products = [
             salesVolume: (s.salesVolume || 0) - nextId,
             icon: s.icon,
             stockStatus: s.stockStatus,
-            warning_stock: s.warning_stock
+            warning_stock: s.warning_stock,
+            baseUnit: s.baseUnit || '件',
+            unitConversions: JSON.parse(JSON.stringify(s.unitConversions || [])),
+            warehouseStock: {},
+            description: s.description || '',
+            defaultPurchaseUnit: s.defaultPurchaseUnit || '__base__',
+            defaultSalesUnit: s.defaultSalesUnit || '__base__'
         });
         nextId++;
     }
+})();
+
+function ensureProductModel(p) {
+    if (!p.baseUnit) p.baseUnit = '件';
+    if (!Array.isArray(p.unitConversions)) p.unitConversions = [];
+    if (!p.warehouseStock || typeof p.warehouseStock !== 'object') p.warehouseStock = {};
+    if (typeof p.description !== 'string') p.description = '';
+    if (typeof p.defaultPurchaseUnit !== 'string') p.defaultPurchaseUnit = '__base__';
+    if (typeof p.defaultSalesUnit !== 'string') p.defaultSalesUnit = '__base__';
+    return p;
+}
+
+function sortedConversionsDesc(conversions) {
+    return [...(conversions || [])].filter(function (c) {
+        return c && c.unit && Number(c.perBase) > 0;
+    }).sort(function (a, b) { return Number(b.perBase) - Number(a.perBase); });
+}
+
+function formatCompoundStockUi(baseQty, baseUnit, conversions) {
+    const q = Math.max(0, Math.floor(Number(baseQty) || 0));
+    const bu = baseUnit || '件';
+    const sorted = sortedConversionsDesc(conversions);
+    if (!sorted.length) return q + bu;
+    let rem = q;
+    const parts = [];
+    for (let i = 0; i < sorted.length; i++) {
+        const per = Number(sorted[i].perBase);
+        const u = sorted[i].unit;
+        const n = Math.floor(rem / per);
+        if (n > 0) parts.push(n + u);
+        rem %= per;
+    }
+    if (rem > 0) parts.push(rem + bu);
+    return parts.length ? parts.join('') : ('0' + bu);
+}
+
+function computeStockStatus(stock, warning) {
+    const w = typeof warning === 'number' ? warning : 200;
+    if (stock <= 50) return '缺货';
+    if (stock <= w) return '预警';
+    return '充足';
+}
+
+(function hydrateWarehouseStockFromMock() {
+    const stocks = window.TM_MOCK_WAREHOUSE_STOCKS;
+    const whs = window.TM_MOCK_WAREHOUSES;
+    if (!stocks || !whs || !whs.length) return;
+    products.forEach(function (p) {
+        ensureProductModel(p);
+        const ws = {};
+        whs.forEach(function (w) {
+            const row = (stocks[w.id] || []).find(function (r) { return r.id === p.id; });
+            if (row && typeof row.qty === 'number') ws[w.name] = row.qty;
+        });
+        if (Object.keys(ws).length) {
+            p.warehouseStock = ws;
+            p.stock = Object.values(ws).reduce(function (a, b) { return a + b; }, 0);
+            p.stockStatus = computeStockStatus(p.stock, getProductWarningStock(p));
+        }
+    });
 })();
 
 // 筛选状态
@@ -405,7 +511,7 @@ window.renderDesktopTable = function(productList) {
     if (productList.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-12 text-center">
+                <td colspan="5" class="px-6 py-12 text-center">
                     <div class="flex flex-col items-center gap-3">
                         <i class="ph ph-package text-4xl text-slate-300"></i>
                         <p class="text-slate-400 font-bold">暂无产品</p>
@@ -418,19 +524,16 @@ window.renderDesktopTable = function(productList) {
     
     tbody.innerHTML = productList.map(product => `
         <tr onclick="window.openProductDetail(${product.id})" class="product-row hover:bg-slate-50 transition-all cursor-pointer group">
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
+            <td class="px-6 py-4 align-top max-w-0">
+                <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-10 h-10 shrink-0 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-colors">
                         <i class="ph ph-${product.icon} text-xl"></i>
                     </div>
-                    <div>
-                        <p class="font-bold text-slate-800 product-name-cell">${product.name}</p>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-slate-800 product-name-cell whitespace-normal break-words leading-snug">${product.name}</p>
                         <p class="text-[10px] text-slate-400 font-mono product-sku-cell uppercase mt-1">SKU: ${product.sku}</p>
                     </div>
                 </div>
-            </td>
-            <td class="px-6 py-4 col-hide-mobile">
-                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold">${product.region}</span>
             </td>
             <td class="px-6 py-4 text-right font-mono font-bold text-slate-500 col-hide-mobile">
                 $${product.price.toFixed(2)}
@@ -439,8 +542,8 @@ window.renderDesktopTable = function(productList) {
                 $${product.purchasePrice.toFixed(2)}
             </td>
             <td class="px-6 py-4 text-right">
-                <p class="font-mono font-bold ${window.getStockColor(product.stockStatus)} tracking-tighter">
-                    ${product.stock.toLocaleString()} <span class="text-[9px] text-slate-400 uppercase">Pcs</span>
+                <p class="font-mono font-bold ${window.getStockColor(product.stockStatus)} tracking-tighter text-[11px] md:text-xs whitespace-nowrap">
+                    ${formatCompoundStockUi(product.stock, product.baseUnit, product.unitConversions)}
                 </p>
                 <div class="w-16 h-1 bg-slate-100 rounded-full mt-1.5 ml-auto overflow-hidden md:block hidden">
                     <div class="w-[${window.getStockPercentage(product.stock)}%] ${window.getStockBgColor(product.stockStatus)} h-full ${product.stockStatus === '缺货' ? 'animate-pulse' : ''}"></div>
@@ -498,8 +601,8 @@ window.renderMobileListPaged = function() {
             </div>
             <div class="flex-1 min-w-0 py-0">
                 <div class="flex justify-between gap-2 items-start">
-                    <p class="font-bold text-slate-800 text-[12px] leading-tight line-clamp-2">${product.name}</p>
-                    <span class="font-mono text-[9px] text-slate-500 shrink-0">${product.stock.toLocaleString()} Pcs</span>
+                    <p class="font-bold text-slate-800 text-[12px] leading-tight line-clamp-3 min-w-0">${product.name}</p>
+                    <span class="font-mono text-[9px] text-slate-600 shrink-0 text-right max-w-[45%]">${formatCompoundStockUi(product.stock, product.baseUnit, product.unitConversions)}</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-0 mt-0.5 text-[10px]">
                     <span class="text-slate-600">销售 <span class="font-mono font-bold">$${product.price.toFixed(2)}</span></span>
@@ -655,30 +758,326 @@ window.initProductCenter = function() {
     window.initFilterOptions();
 };
 
-window.openProductDetail = function(productId) {
-    console.log('=== openProductDetail 被调用，产品ID:', productId);
-    const product = products.find(p => p.id === productId || p.name === productId);
-    console.log('找到的产品:', product);
-    if (product) {
-        currentProduct = product;
-        const modal = document.getElementById('product-detail-modal');
-        if (modal) {
-            const titleEl = document.getElementById('detail-title');
-            const skuEl = document.getElementById('detail-sku');
-            if (titleEl) titleEl.textContent = product.name;
-            if (skuEl) skuEl.textContent = 'SKU: ' + product.sku;
-            modal.classList.remove('hidden');
-        }
+const MAX_UNIT_CONVERSION_ROWS = 2;
+
+function tmEscAttr(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+}
+
+function collapseAdvancedDrawer() {
+    const modal = document.getElementById('product-detail-modal');
+    const drawer = modal ? modal.querySelector('.tm-product-advanced-drawer') : null;
+    const icon = document.getElementById('product-detail-advanced-icon');
+    if (drawer) {
+        drawer.classList.remove('open');
+        drawer.setAttribute('aria-hidden', 'true');
     }
+    if (icon) {
+        icon.classList.add('ph-caret-down');
+        icon.classList.remove('ph-caret-up');
+    }
+}
+
+function rebuildSupplierSelect(selectedSupplier) {
+    const el = document.getElementById('detail-product-supplier');
+    if (!el) return;
+    const opts = suppliers.filter(s => s !== '全部');
+    el.innerHTML = opts.map(s => `<option value="${tmEscAttr(s)}">${s}</option>`).join('');
+    if (selectedSupplier && opts.includes(selectedSupplier)) el.value = selectedSupplier;
+}
+
+function rebuildUnitSelects(product) {
+    ensureProductModel(product);
+    const purchaseEl = document.getElementById('detail-product-purchase-unit');
+    const salesEl = document.getElementById('detail-product-sales-unit');
+    if (!purchaseEl || !salesEl) return;
+    const base = product.baseUnit || '件';
+    const sorted = sortedConversionsDesc(product.unitConversions);
+    let html = '';
+    sorted.forEach(c => {
+        html += `<option value="${tmEscAttr(c.unit)}">${c.unit}（1${c.unit}=${c.perBase}${base}）</option>`;
+    });
+    html += `<option value="__base__">${base}（基本单位）</option>`;
+    purchaseEl.innerHTML = html;
+    salesEl.innerHTML = html;
+    const pick = val => {
+        if (val === '__base__') return '__base__';
+        if (sorted.some(x => x.unit === val)) return val;
+        return sorted.length ? sorted[0].unit : '__base__';
+    };
+    purchaseEl.value = pick(product.defaultPurchaseUnit);
+    salesEl.value = pick(product.defaultSalesUnit);
+}
+
+function syncTotalStockFromWarehouseInputs() {
+    const container = document.getElementById('detail-product-warehouse-stock');
+    const stockEl = document.getElementById('detail-product-stock');
+    if (!container || !stockEl) return;
+    let sum = 0;
+    container.querySelectorAll('.detail-warehouse-stock-input').forEach(inp => {
+        sum += parseInt(inp.value, 10) || 0;
+    });
+    stockEl.value = String(sum);
+}
+
+function updateWarehouseRowPreview(rowEl, product) {
+    if (!rowEl || !product) return;
+    const inp = rowEl.querySelector('.detail-warehouse-stock-input');
+    const preview = rowEl.querySelector('.warehouse-stock-preview');
+    if (!inp || !preview) return;
+    const q = parseInt(inp.value, 10) || 0;
+    preview.textContent = formatCompoundStockUi(q, product.baseUnit, product.unitConversions);
+}
+
+function readWarehouseStockFromContainer() {
+    const container = document.getElementById('detail-product-warehouse-stock');
+    if (!container) return {};
+    const out = {};
+    container.querySelectorAll('.detail-warehouse-stock-input').forEach(inp => {
+        const name = inp.getAttribute('data-warehouse');
+        if (!name) return;
+        out[name] = Math.max(0, parseInt(inp.value, 10) || 0);
+    });
+    return out;
+}
+
+function renderWarehouseStockSummary(product) {
+    const el = document.getElementById('detail-product-warehouse-stock');
+    if (!el) return;
+    ensureProductModel(product);
+    const whs = window.TM_MOCK_WAREHOUSES || [];
+    const base = product.baseUnit || '件';
+    const conv = product.unitConversions || [];
+
+    if (!whs.length) {
+        el.innerHTML =
+            '<p class="text-[11px] text-slate-400 leading-relaxed">暂无仓库档案，请先在仓库管理中维护。</p>';
+        return;
+    }
+
+    const rows = whs.map(w => {
+        const qtyRaw = product.warehouseStock[w.name];
+        const v = qtyRaw != null && qtyRaw >= 0 ? qtyRaw : 0;
+        const preview = formatCompoundStockUi(v, base, conv);
+        const wName = tmEscAttr(w.name);
+        return `<div class="warehouse-stock-row flex flex-wrap items-center gap-2 justify-between text-xs border-b border-slate-100/80 pb-2 last:border-0 last:pb-0">
+            <span class="font-bold text-slate-600 shrink-0">${wName}</span>
+            <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                <input type="number" min="0" step="1" class="form-input font-mono text-right w-[6.5rem] py-1.5 text-xs detail-warehouse-stock-input" data-warehouse="${wName}" value="${v}" autocomplete="off" aria-label="${wName} 库存基本数量">
+                <span class="text-[10px] font-mono text-slate-500 whitespace-nowrap warehouse-stock-preview">${preview}</span>
+            </div>
+        </div>`;
+    });
+
+    el.innerHTML = `<div class="space-y-2">${rows.join('')}</div><p class="text-[10px] text-slate-400 mt-2 leading-relaxed">数量为基本单位；右侧为按当前换算规则折算预览。修改后将自动汇总到上方「当前库存总量」。</p>`;
+
+    el.querySelectorAll('.warehouse-stock-row').forEach(row => {
+        const inp = row.querySelector('.detail-warehouse-stock-input');
+        if (!inp) return;
+        inp.addEventListener('input', () => {
+            updateWarehouseRowPreview(row, product);
+            syncTotalStockFromWarehouseInputs();
+        });
+    });
+}
+
+function syncUnitModalRowButtons() {
+    const container = document.getElementById('unit-conversion-rows');
+    const addBtn = document.getElementById('unit-modal-add-btn');
+    const rmBtn = document.getElementById('unit-modal-remove-btn');
+    const n = container ? container.querySelectorAll('.unit-conversion-row').length : 0;
+    if (addBtn) {
+        addBtn.disabled = n >= MAX_UNIT_CONVERSION_ROWS;
+        addBtn.classList.toggle('opacity-40', n >= MAX_UNIT_CONVERSION_ROWS);
+    }
+    if (rmBtn) {
+        rmBtn.disabled = n <= 1;
+        rmBtn.classList.toggle('opacity-40', n <= 1);
+    }
+}
+
+function paintUnitModalRows(rows, baseLabel) {
+    const container = document.getElementById('unit-conversion-rows');
+    if (!container) return;
+    const bl = baseLabel || '件';
+    container.innerHTML = rows
+        .map(
+            (row, idx) => `
+        <div class="unit-conversion-row flex flex-wrap items-end gap-2 sm:gap-3" data-idx="${idx}">
+            <div class="flex-1 min-w-[5rem]">${idx === 0 ? '<label class="text-[9px] font-black text-slate-400 uppercase block mb-1">包装单位</label>' : '<span class="block mb-1 h-[14px]"></span>'}
+                <input type="text" data-field="unit" value="${tmEscAttr(row.unit || '')}" class="form-input text-center font-bold w-full" placeholder="如：箱" autocomplete="off"></div>
+            <div class="pb-2 text-slate-300 hidden sm:block select-none">=</div>
+            <div class="flex-1 min-w-[5rem]">${idx === 0 ? '<label class="text-[9px] font-black text-slate-400 uppercase block mb-1">折合基本数量</label>' : '<span class="block mb-1 h-[14px]"></span>'}
+                <input type="number" min="1" data-field="perBase" value="${row.perBase !== '' && row.perBase != null ? tmEscAttr(row.perBase) : ''}" class="form-input text-center text-brand-600 font-black w-full" placeholder="数量" autocomplete="off"></div>
+            <div class="pb-2 text-xs font-bold text-slate-400 shrink-0">${tmEscAttr(bl)}</div>
+        </div>`
+        )
+        .join('');
+    syncUnitModalRowButtons();
+}
+
+function readUnitRowsFromModal() {
+    const container = document.getElementById('unit-conversion-rows');
+    if (!container) return [{ unit: '', perBase: '' }];
+    const out = [];
+    container.querySelectorAll('.unit-conversion-row').forEach(row => {
+        const u = row.querySelector('[data-field="unit"]');
+        const n = row.querySelector('[data-field="perBase"]');
+        out.push({ unit: u ? u.value.trim() : '', perBase: n ? n.value : '' });
+    });
+    return out.length ? out : [{ unit: '', perBase: '' }];
+}
+
+window.addUnitConversionRow = function() {
+    const container = document.getElementById('unit-conversion-rows');
+    if (!container) return;
+    const rows = container.querySelectorAll('.unit-conversion-row');
+    if (rows.length >= MAX_UNIT_CONVERSION_ROWS) return;
+    const baseInput = document.getElementById('detail-product-base-unit');
+    const bl = (baseInput && baseInput.value.trim()) || '件';
+    const data = readUnitRowsFromModal();
+    data.push({ unit: '', perBase: '' });
+    paintUnitModalRows(data, bl);
+};
+
+window.removeUnitConversionRow = function() {
+    const baseInput = document.getElementById('detail-product-base-unit');
+    const bl = (baseInput && baseInput.value.trim()) || '件';
+    const data = readUnitRowsFromModal();
+    if (data.length <= 1) return;
+    data.pop();
+    paintUnitModalRows(data, bl);
+};
+
+window.saveUnitConversionRules = function() {
+    const prod = currentProduct || window.currentProduct;
+    const baseInput = document.getElementById('detail-product-base-unit');
+    const base = (baseInput && baseInput.value.trim()) || '件';
+    if (baseInput) baseInput.value = base;
+    const rows = readUnitRowsFromModal();
+    const list = [];
+    rows.forEach(r => {
+        const u = (r.unit || '').trim();
+        const n = parseInt(r.perBase, 10);
+        if (u && n > 0) list.push({ unit: u, perBase: n });
+    });
+    list.sort((a, b) => b.perBase - a.perBase);
+    if (prod) {
+        prod.unitConversions = list;
+        prod.baseUnit = base;
+        ensureProductModel(prod);
+        rebuildUnitSelects(prod);
+        renderWarehouseStockSummary(prod);
+    }
+    window.closeProductUnitModal();
+};
+
+window.openNewProductModal = function() {
+    collapseAdvancedDrawer();
+    const newSku = `SKU-${Date.now().toString().slice(-6)}`;
+    const draft = {
+        _isNew: true,
+        id: null,
+        name: '',
+        sku: newSku,
+        category1: categories[0]?.name || '户外照明',
+        category2: categories[0]?.subcategories?.[0] || '默认',
+        supplier: suppliers.find(s => s !== '全部') || '深圳照明科技',
+        region: '',
+        price: 0,
+        purchasePrice: 0,
+        stock: 0,
+        salesVolume: 0,
+        icon: 'package',
+        stockStatus: '缺货',
+        warning_stock: 100,
+        baseUnit: '件',
+        unitConversions: [],
+        warehouseStock: {},
+        description: '',
+        defaultPurchaseUnit: '__base__',
+        defaultSalesUnit: '__base__'
+    };
+    currentProduct = draft;
+    window.currentProduct = draft;
+
+    const modal = document.getElementById('product-detail-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('detail-title');
+    const skuEl = document.getElementById('detail-sku');
+    const nameEl = document.getElementById('detail-product-name');
+    const skuInputEl = document.getElementById('detail-product-sku-input');
+    const priceEl = document.getElementById('detail-product-price');
+    const stockEl = document.getElementById('detail-product-stock');
+    const warningStockEl = document.getElementById('detail-product-warning-stock');
+    const baseUnitEl = document.getElementById('detail-product-base-unit');
+    const descEl = document.getElementById('detail-product-description');
+
+    if (titleEl) titleEl.textContent = '新增产品';
+    if (skuEl) skuEl.textContent = 'SKU: ' + newSku;
+    if (nameEl) nameEl.value = '';
+    if (skuInputEl) skuInputEl.value = newSku;
+    if (priceEl) priceEl.value = '0';
+    if (stockEl) stockEl.value = '0';
+    if (warningStockEl) warningStockEl.value = '100';
+    if (baseUnitEl) baseUnitEl.value = '件';
+    if (descEl) descEl.value = '';
+
+    rebuildSupplierSelect(draft.supplier);
+    rebuildUnitSelects(draft);
+    renderWarehouseStockSummary(draft);
+
+    modal.classList.remove('hidden');
+};
+
+window.openProductDetail = function(productId) {
+    const product = products.find(p => p.id === productId || p.name === productId);
+    if (!product) return;
+    ensureProductModel(product);
+    currentProduct = product;
+    window.currentProduct = product;
+    collapseAdvancedDrawer();
+
+    const modal = document.getElementById('product-detail-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('detail-title');
+    const skuEl = document.getElementById('detail-sku');
+    const nameEl = document.getElementById('detail-product-name');
+    const skuInputEl = document.getElementById('detail-product-sku-input');
+    const priceEl = document.getElementById('detail-product-price');
+    const stockEl = document.getElementById('detail-product-stock');
+    const warningStockEl = document.getElementById('detail-product-warning-stock');
+    const baseUnitEl = document.getElementById('detail-product-base-unit');
+    const descEl = document.getElementById('detail-product-description');
+
+    if (titleEl) titleEl.textContent = product.name;
+    if (skuEl) skuEl.textContent = 'SKU: ' + product.sku;
+    if (nameEl) nameEl.value = product.name || '';
+    if (skuInputEl) skuInputEl.value = product.sku || '';
+    if (priceEl) priceEl.value = product.price != null ? product.price : '';
+    if (stockEl) stockEl.value = product.stock != null ? product.stock : '';
+    if (warningStockEl) warningStockEl.value = getProductWarningStock(product);
+    if (baseUnitEl) baseUnitEl.value = product.baseUnit || '件';
+    if (descEl) descEl.value = product.description || '';
+
+    rebuildSupplierSelect(product.supplier);
+    rebuildUnitSelects(product);
+    renderWarehouseStockSummary(product);
+
+    modal.classList.remove('hidden');
 };
 
 window.closeProductDetail = function() {
-    console.log('=== closeProductDetail 被调用 ===');
     const modal = document.getElementById('product-detail-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+    if (modal) modal.classList.add('hidden');
+    collapseAdvancedDrawer();
     currentProduct = null;
+    window.currentProduct = null;
 };
 
 window.confirmDeleteProduct = function(productName) {
@@ -690,37 +1089,148 @@ window.confirmDeleteProduct = function(productName) {
 };
 
 window.saveProduct = function() {
-    console.log('=== saveProduct 被调用 ===');
-    alert('产品信息已保存！');
+    const prod = currentProduct || window.currentProduct;
+    const nameEl = document.getElementById('detail-product-name');
+    const skuInputEl = document.getElementById('detail-product-sku-input');
+    const priceEl = document.getElementById('detail-product-price');
+    const stockEl = document.getElementById('detail-product-stock');
+    const supplierEl = document.getElementById('detail-product-supplier');
+    const warningStockEl = document.getElementById('detail-product-warning-stock');
+    const baseUnitEl = document.getElementById('detail-product-base-unit');
+    const descEl = document.getElementById('detail-product-description');
+    const purchaseEl = document.getElementById('detail-product-purchase-unit');
+    const salesEl = document.getElementById('detail-product-sales-unit');
+
+    if (!nameEl || !skuInputEl || !priceEl || !stockEl || !supplierEl) {
+        alert('产品信息表单未就绪，请重试。');
+        return;
+    }
+
+    const name = nameEl.value.trim();
+    const sku = skuInputEl.value.trim();
+    const price = parseFloat(priceEl.value) || 0;
+    let stock = parseInt(stockEl.value, 10) || 0;
+    const whStock = readWarehouseStockFromContainer();
+    const sumWh = Object.values(whStock).reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
+    const supplier = (supplierEl.value || '').trim();
+    const warningParsed = parseInt(warningStockEl && warningStockEl.value, 10);
+    const warning_stock = Number.isFinite(warningParsed) ? warningParsed : 100;
+    const baseUnit = (baseUnitEl && baseUnitEl.value.trim()) || '件';
+    const description = descEl ? descEl.value.trim() : '';
+    const defaultPurchaseUnit = purchaseEl ? purchaseEl.value : '__base__';
+    const defaultSalesUnit = salesEl ? salesEl.value : '__base__';
+
+    if (!name || !sku) {
+        alert('请填写产品名称与 SKU 编码。');
+        return;
+    }
+
+    if (!prod) {
+        alert('未找到当前编辑上下文。');
+        return;
+    }
+
+    ensureProductModel(prod);
+    prod.name = name;
+    prod.sku = sku;
+    prod.price = price;
+    prod.supplier = supplier;
+    prod.warning_stock = warning_stock;
+    prod.baseUnit = baseUnit;
+    prod.description = description;
+    prod.defaultPurchaseUnit = defaultPurchaseUnit;
+    prod.defaultSalesUnit = defaultSalesUnit;
+    if (Object.keys(whStock).length) {
+        prod.warehouseStock = whStock;
+        if (sumWh > 0) {
+            stock = sumWh;
+            stockEl.value = String(stock);
+        }
+    }
+    prod.stock = stock;
+    prod.stockStatus = computeStockStatus(stock, warning_stock);
+
+    if (prod._isNew) {
+        prod.purchasePrice = Math.max(0, +(price * 0.7).toFixed(2));
+        const maxId = products.reduce((m, x) => Math.max(m, x.id || 0), 0);
+        prod.id = maxId + 1;
+        delete prod._isNew;
+        products.unshift(prod);
+        alert('新产品已新增到产品库！');
+    } else {
+        alert('产品信息已更新！');
+    }
+
+    window.filterProducts();
     window.closeProductDetail();
 };
 
 window.toggleAdvanced = function() {
-    console.log('=== toggleAdvanced 被调用 ===');
-    const drawer = document.getElementById('advanced-drawer');
-    const icon = document.getElementById('advanced-icon');
-    if (drawer && icon) {
-        drawer.classList.toggle('open');
-        icon.classList.toggle('ph-caret-down');
-        icon.classList.toggle('ph-caret-up');
+    const crmModal = document.getElementById('client-edit-modal');
+    const productModal = document.getElementById('product-detail-modal');
+    let drawer = null;
+    let icon = null;
+    if (crmModal && !crmModal.classList.contains('hidden')) {
+        drawer = crmModal.querySelector('#advanced-drawer');
+        icon = crmModal.querySelector('#advanced-icon');
+    } else if (productModal && !productModal.classList.contains('hidden')) {
+        drawer = productModal.querySelector('.tm-product-advanced-drawer');
+        icon = document.getElementById('product-detail-advanced-icon');
     }
+    if (!drawer || !icon) return;
+    const willOpen = !drawer.classList.contains('open');
+    drawer.classList.toggle('open');
+    if (drawer.classList.contains('tm-product-advanced-drawer')) {
+        drawer.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
+    }
+    icon.classList.toggle('ph-caret-down');
+    icon.classList.toggle('ph-caret-up');
 };
 
-window.openUnitModal = function() {
-    console.log('=== openUnitModal 被调用 ===');
-    const modal = document.getElementById('unit-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
+window.openProductUnitModal = function() {
+    const modal = document.getElementById('product-unit-modal');
+    const baseInput = document.getElementById('detail-product-base-unit');
+    const base = (baseInput && baseInput.value.trim()) || '件';
+    const prod = currentProduct || window.currentProduct;
+    let conversions = [];
+    if (prod && Array.isArray(prod.unitConversions) && prod.unitConversions.length) {
+        conversions = prod.unitConversions.map(c => ({ unit: c.unit, perBase: c.perBase }));
+    } else {
+        conversions = [{ unit: '', perBase: '' }];
     }
+    conversions = conversions.slice(0, MAX_UNIT_CONVERSION_ROWS);
+    if (!conversions.length) conversions = [{ unit: '', perBase: '' }];
+    paintUnitModalRows(conversions, base);
+    if (modal) modal.classList.remove('hidden');
 };
 
-window.closeUnitModal = function() {
-    console.log('=== closeUnitModal 被调用 ===');
-    const modal = document.getElementById('unit-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+window.closeProductUnitModal = function() {
+    const modal = document.getElementById('product-unit-modal');
+    if (modal) modal.classList.add('hidden');
 };
+
+window.openAuditUnitModal = function() {
+    const modal = document.getElementById('audit-unit-modal');
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeAuditUnitModal = function() {
+    const modal = document.getElementById('audit-unit-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.openDashboardUnitModal = function() {
+    const modal = document.getElementById('dashboard-unit-modal');
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeDashboardUnitModal = function() {
+    const modal = document.getElementById('dashboard-unit-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.openUnitModal = window.openProductUnitModal;
+window.closeUnitModal = window.closeProductUnitModal;
 
 window.openWarehouseDrawer = function() {
     console.log('=== openWarehouseDrawer 被调用 ===');

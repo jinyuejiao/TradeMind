@@ -1085,9 +1085,7 @@ function toggleAdvanced(type) {
     icon.classList.toggle('ph-caret-down');
 }
 
-// 单位弹窗开关
-function openUnitModal() { document.getElementById('unit-modal').classList.remove('hidden'); }
-function closeUnitModal() { document.getElementById('unit-modal').classList.add('hidden'); }
+// 单位换算弹窗由 JsImpl/product-center.js 提供（product-unit-modal / audit-unit-modal / dashboard-unit-modal）
 
 // 模拟报表切换逻辑 (补全)
 function switchReport(type) {
@@ -2832,16 +2830,6 @@ window.toggleAdvanced = function() {
         icon.classList.toggle('ph-caret-down');
         icon.classList.toggle('ph-caret-up');
     }
-};
-
-window.openUnitModal = function() {
-    const modal = document.getElementById('unit-modal');
-    if (modal) modal.classList.remove('hidden');
-};
-
-window.closeUnitModal = function() {
-    const modal = document.getElementById('unit-modal');
-    if (modal) modal.classList.add('hidden');
 };
 
 window.openWarehouseDrawer = function() {

@@ -389,3 +389,12 @@ body {
         right: 0.25rem;
     }
 }
+
+/* 产品详情弹窗：高级配置默认收起，展开后显示 */
+#product-detail-modal .tm-product-advanced-drawer:not(.open) {
+    display: none;
+}
+
+#product-detail-modal .tm-product-advanced-drawer.open {
+    display: block;
+}
