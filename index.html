@@ -345,6 +345,15 @@
         <!-- 内容区域 -->
         <div id="content-area" class="flex-1 overflow-y-auto bg-slate-50 no-scrollbar pb-24 md:pb-0">
 
+            <!-- 运维中心下发的全站公告（HTML，时效由 ops-portal 控制） -->
+            <div id="tm-ops-site-banner" class="hidden mx-4 mt-3 md:mx-8 md:mt-4 rounded-[2.5rem] border border-indigo-200/80 bg-white/80 backdrop-blur-md shadow-sm overflow-hidden text-sm text-slate-700">
+                <div class="flex items-start gap-3 px-4 py-3 md:px-5 md:py-3.5">
+                    <i class="ph ph-megaphone-simple text-xl text-indigo-600 shrink-0 mt-0.5"></i>
+                    <div id="tm-ops-site-banner-inner" class="flex-1 min-w-0 text-sm leading-relaxed [&_a]:text-[#4F46E5] [&_a]:underline"></div>
+                    <button type="button" onclick="document.getElementById('tm-ops-site-banner').classList.add('hidden')" class="shrink-0 text-slate-400 hover:text-slate-600 p-1 rounded-lg" title="关闭本页展示"><i class="ph ph-x text-lg"></i></button>
+                </div>
+            </div>
+
             <!-- ================= [1] 工作台 DASHBOARD (核心操作区) ================= -->
             <div id="view-dashboard" class="view-section w-full p-4 md:p-8 space-y-6 fade-in">
                 <div class="flex flex-col md:flex-row md:items-end justify-between">

@@ -1,0 +1,64 @@
+<div class="space-y-6 fade-in">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex flex-wrap gap-2" id="ops-industry-filter">
+            <button type="button" data-industry="ALL" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border-2 border-ops-600 bg-ops-600 text-white shadow-md">全行业</button>
+            <button type="button" data-industry="WHOLESALE" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">批发</button>
+            <button type="button" data-industry="FOREIGN" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">外贸</button>
+            <button type="button" data-industry="ECOM" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">电商</button>
+            <button type="button" data-industry="FACTORY" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">工贸</button>
+        </div>
+        <div class="tm-ops-glass rounded-tm-3xl px-5 py-3 flex flex-wrap gap-4 text-center">
+            <div><p class="text-[10px] font-bold text-slate-400 uppercase">租户数</p><p id="ops-stat-tenants" class="text-lg font-black text-ops-700 font-mono">—</p></div>
+            <div class="w-px bg-indigo-100 hidden sm:block"></div>
+            <div><p class="text-[10px] font-bold text-slate-400 uppercase">用户总数</p><p id="ops-stat-users" class="text-lg font-black text-ops-700 font-mono">—</p></div>
+            <div class="w-px bg-indigo-100 hidden sm:block"></div>
+            <div><p class="text-[10px] font-bold text-slate-400 uppercase">管理员 / 运营 / 其他</p><p id="ops-stat-roles" class="text-xs font-bold text-slate-600">—</p></div>
+        </div>
+    </div>
+
+    <div class="tm-ops-glass rounded-tm-3xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-indigo-100/80 flex items-center justify-between bg-white/50">
+            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="ph ph-users-three text-ops-600"></i> 租户透视</h2>
+            <span class="text-[10px] font-bold text-slate-400">GET /api/ops/tenants/summary · Feign TenantAdminClient</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-ops-50/80 text-[10px] uppercase font-bold text-ops-800 tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3">租户</th>
+                        <th class="px-4 py-3">行业</th>
+                        <th class="px-4 py-3">状态</th>
+                        <th class="px-4 py-3">到期日</th>
+                        <th class="px-4 py-3 text-right">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="ops-tenant-table-body" class="divide-y divide-indigo-50 bg-white/60"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 权益赠送 / 调整到期日 -->
+<div id="ops-modal-tenant" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 tm-ops-modal-backdrop">
+    <div class="bg-white rounded-tm-3xl shadow-2xl max-w-md w-full p-6 md:p-8 relative fade-in border border-indigo-100">
+        <button type="button" id="ops-modal-tenant-close" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="ph ph-x text-xl"></i></button>
+        <h3 id="ops-modal-tenant-title" class="text-lg font-bold text-slate-800 pr-8">租户运维</h3>
+        <p id="ops-modal-tenant-sub" class="text-xs text-slate-500 mt-1 mb-5"></p>
+        <input type="hidden" id="ops-modal-tenant-id" value="">
+        <div class="space-y-4">
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase">赠送试用（月）</label>
+                <input type="number" id="ops-input-trial-months" min="0" max="36" value="1" class="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-ops-500">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase">活动类型 / 备注</label>
+                <input type="text" id="ops-input-trial-note" placeholder="如：春节活动、KA 拓新" class="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-ops-500">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase">或直接调整到期日</label>
+                <input type="date" id="ops-input-expiry-date" class="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-ops-500">
+            </div>
+            <button type="button" id="ops-btn-save-tenant-ops" class="w-full py-3 rounded-2xl bg-ops-600 hover:bg-ops-700 text-white text-sm font-bold shadow-lg shadow-ops-600/25 transition-colors">保存并记审计</button>
+        </div>
+    </div>
+</div>

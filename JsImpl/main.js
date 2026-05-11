@@ -541,6 +541,36 @@ function loadSupplier() {
 window.onload = function() {
     loadDashboard();
     if (typeof syncSidebarMembershipBadge === 'function') syncSidebarMembershipBadge();
+    if (typeof window.tmSyncOpsSiteAnnouncement === 'function') window.tmSyncOpsSiteAnnouncement();
+};
+
+/** 运维中心发布的全站公告（localStorage，与 ops-portal 写入键一致） */
+window.tmSyncOpsSiteAnnouncement = function() {
+    var el = document.getElementById('tm-ops-site-banner');
+    var inner = document.getElementById('tm-ops-site-banner-inner');
+    if (!el || !inner) return;
+    try {
+        var raw = localStorage.getItem('tm_ops_site_announcement_v1');
+        if (!raw) {
+            el.classList.add('hidden');
+            inner.innerHTML = '';
+            return;
+        }
+        var o = JSON.parse(raw);
+        var now = Date.now();
+        var from = o.validFrom ? Date.parse(o.validFrom) : 0;
+        var to = o.validTo ? Date.parse(o.validTo) : 8640000000000000;
+        if (!o.html || now < from || now > to) {
+            el.classList.add('hidden');
+            inner.innerHTML = '';
+            return;
+        }
+        inner.innerHTML = o.html;
+        el.classList.remove('hidden');
+    } catch (e) {
+        el.classList.add('hidden');
+        inner.innerHTML = '';
+    }
 };
 
 function switchTab(tabId) {
