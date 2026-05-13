@@ -2,7 +2,7 @@
  * TradeMind OpsService — 运维门户控制器
  *
  * === 后端 / Feign 路由契约（供网关与服务拆分对齐）===
- * GET  /api/ops/tenants/summary?industry=ALL|WHOLESALE|...  — 租户分布、用户数、角色构成
+ * GET  /api/ops/tenants/tree?industry=&sort=aiTokensMonth|subscriptionYear|revenueMonth|profitMonth — 租户树：订阅卡片、用户级 AI（合并原 summary / quota-ai）
  * POST /api/ops/tenants/{tenantId}/freeze                   — body: { frozen: boolean }
  * POST /api/ops/tenants/{tenantId}/trial-grant             — body: { months, activityType, remark }
  * PATCH /api/ops/tenants/{tenantId}/subscription-expiry   — body: { expiryDate: "ISO-date" }
@@ -28,9 +28,8 @@
     var selectedBankGroupKey = '';
 
     var ROUTES = {
-        tenants: { file: './modules/ops/tenants-lifecycle.html', title: '租户与生命周期' },
-        plans: { file: './modules/ops/plan-catalog-by-merchant.html', title: '订阅套餐（商户类型）' },
-        'quota-ai': { file: './modules/ops/quota-ai-metering.html', title: '配额与 AI 计量' },
+        tenants: { file: './modules/ops/tenants-quota-tree.html', title: '租户看板' },
+        plans: { file: './modules/ops/plan-catalog-by-merchant.html', title: '订阅策略' },
         referral: { file: './modules/ops/referral-settlement.html', title: '推荐与结算' },
         announce: { file: './modules/ops/announce-audit.html', title: '公告与审计' }
     };
@@ -172,7 +171,9 @@
         month: [
             { tenant: '精工制造工贸', tokens: 8900000, extract: 5200000, chat: 3700000 },
             { tenant: '跨境小铺 A', tokens: 6200000, extract: 4100000, chat: 2100000 },
-            { tenant: '华南灯具批发', tokens: 4100000, extract: 3000000, chat: 1100000 }
+            { tenant: '华南灯具批发', tokens: 4100000, extract: 3000000, chat: 1100000 },
+            { tenant: '远航外贸', tokens: 2800000, extract: 1700000, chat: 1100000 },
+            { tenant: '义乌百货联盟', tokens: 1500000, extract: 900000, chat: 600000 }
         ]
     };
 
@@ -293,7 +294,6 @@
     }
 
     var currentIndustry = 'ALL';
-    var currentAiPeriod = 'day';
 
     function el(id) {
         return document.getElementById(id);
@@ -327,9 +327,8 @@
         setActiveNav(route);
         return fetchHtml(cfg.file + '?t=' + Date.now()).then(function (html) {
             root.innerHTML = html;
-            if (route === 'tenants') initTenantsPage();
+            if (route === 'tenants') initTenantsQuotaTreePage();
             else if (route === 'plans') initPlanCatalogPage();
-            else if (route === 'quota-ai') initQuotaAiPage();
             else if (route === 'referral') initReferralPage();
             else if (route === 'announce') initAnnouncePage();
         }).catch(function () {
@@ -593,29 +592,6 @@
         if (sr) sr.textContent = admin + ' / ' + ops + ' / ' + other;
     }
 
-    function renderTenantRows(list, filter) {
-        var tbody = el('ops-tenant-table-body');
-        if (!tbody) return;
-        var rows = filter === 'ALL' ? list : list.filter(function (t) {
-            return t.industry === filter;
-        });
-        tbody.innerHTML = rows.map(function (t) {
-            var frozen = t.frozen ? '<span class="text-rose-600 font-bold">已冻结</span>' : '<span class="text-emerald-600 font-bold">正常</span>';
-            var ind = industryLabel[t.industry] || t.industry;
-            return (
-                '<tr class="hover:bg-ops-50/50">' +
-                '<td class="px-4 py-3 font-semibold text-slate-800">' + escapeHtml(t.name) + '<span class="block text-[10px] font-mono text-slate-400">' + escapeHtml(t.id) + '</span></td>' +
-                '<td class="px-4 py-3">' + escapeHtml(ind) + '</td>' +
-                '<td class="px-4 py-3">' + frozen + '</td>' +
-                '<td class="px-4 py-3 font-mono text-slate-600">' + escapeHtml(t.expiry) + '</td>' +
-                '<td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">' +
-                '<button type="button" class="ops-act-freeze px-2 py-1 rounded-xl text-[10px] font-bold border border-slate-200 hover:bg-slate-50" data-id="' + escapeHtml(t.id) + '">' + (t.frozen ? '解冻' : '冻结') + '</button>' +
-                '<button type="button" class="ops-act-edit px-2 py-1 rounded-xl text-[10px] font-bold bg-ops-600 text-white hover:bg-ops-700" data-id="' + escapeHtml(t.id) + '">权益/到期</button>' +
-                '</td></tr>'
-            );
-        }).join('');
-    }
-
     function escapeHtml(s) {
         return String(s == null ? '' : s)
             .replace(/&/g, '&amp;')
@@ -624,64 +600,254 @@
             .replace(/"/g, '&quot;');
     }
 
-    function initTenantsPage() {
+    function hashFromTenantId(id) {
+        var s = String(id || '');
+        var h = 0;
+        for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+        return h;
+    }
+
+    function findQuotaByName(name) {
+        var n = String(name || '');
+        return mockQuotaByTenant.find(function (q) {
+            return q.name === n;
+        }) || { name: n, products: 0, customers: 0, suppliers: 0 };
+    }
+
+    function findAiMonthByName(name) {
+        var n = String(name || '');
+        var rows = mockAiRank.month || [];
+        return rows.find(function (r) {
+            return r.tenant === n;
+        }) || { tenant: n, tokens: 0, extract: 0, chat: 0 };
+    }
+
+    function pickPlanForTenant(t, catalog) {
+        var arr = catalog[t.industry] || catalog.WHOLESALE || [];
+        if (!arr.length) return normalizePlan({});
+        var ix = typeof t.planTier === 'number' ? t.planTier : (t.users > 60 ? 2 : t.users > 22 ? 1 : 0);
+        ix = Math.max(0, Math.min(arr.length - 1, ix));
+        return normalizePlan(arr[ix]);
+    }
+
+    function seedRevenueProfit(t) {
+        var h = hashFromTenantId(t.id);
+        return {
+            revenueMonth: 320000 + (h % 900) * 1200,
+            profitMonth: 28000 + (h % 120) * 420
+        };
+    }
+
+    function buildSyntheticUsers(t, extractT, chatT) {
+        var roles = t.roles || { admin: 1, ops: 1, other: 3 };
+        var slots = [];
+        var a;
+        for (a = 0; a < (roles.admin || 0); a++) slots.push({ role: '管理员', label: '管理员' + (a + 1) });
+        for (a = 0; a < (roles.ops || 0); a++) slots.push({ role: '运营', label: '运营' + (a + 1) });
+        var rest = Math.min(6, Math.max(1, roles.other || 0));
+        for (a = 0; a < rest; a++) slots.push({ role: '员工', label: '用户' + (a + 1) });
+        if (!slots.length) slots.push({ role: '管理员', label: '主账号' });
+        var n = Math.min(slots.length, 10);
+        slots = slots.slice(0, n);
+        var parts = slots.length;
+        var baseE = extractT / parts;
+        var baseC = chatT / parts;
+        return slots.map(function (s, idx) {
+            var w = 0.65 + ((hashFromTenantId(t.id + idx) % 70) / 100);
+            var ex = Math.max(0, Math.round(baseE * w));
+            var ch = Math.max(0, Math.round(baseC * w));
+            return {
+                id: t.id + '-u-' + idx,
+                name: s.label,
+                role: s.role,
+                extractMonth: ex,
+                chatMonth: ch,
+                tokensMonth: ex + ch
+            };
+        });
+    }
+
+    function mergeTenantForTree(t, catalog) {
+        var q = findQuotaByName(t.name);
+        var ai = findAiMonthByName(t.name);
+        var rp = seedRevenueProfit(t);
+        var plan = pickPlanForTenant(t, catalog);
+        var users = buildSyntheticUsers(t, ai.extract || 0, ai.chat || 0);
+        return {
+            raw: t,
+            plan: plan,
+            usage: { products: q.products, customers: q.customers, suppliers: q.suppliers, users: t.users || 0 },
+            aiTokensMonth: ai.tokens || 0,
+            extractMonth: ai.extract || 0,
+            chatMonth: ai.chat || 0,
+            subscriptionYear: plan.priceCurrentYear || 0,
+            revenueMonth: rp.revenueMonth,
+            profitMonth: rp.profitMonth,
+            users: users
+        };
+    }
+
+    function usageBar(cur, max, overClass) {
+        max = Math.max(1, max || 1);
+        var p = Math.min(150, Math.round((100 * cur) / max));
+        var bar = p > 100 ? 'bg-rose-500' : p > 88 ? 'bg-amber-500' : 'bg-ops-500';
+        return (
+            '<div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">' +
+            '<div class="h-1.5 rounded-full ' + (overClass || bar) + '" style="width:' + Math.min(100, p) + '%"></div></div>'
+        );
+    }
+
+    function initTenantsQuotaTreePage() {
         var list = loadTenants();
+        var catalog = loadSubscriptionCatalog();
+        var expanded = new Set();
+        var sortKey = 'aiTokensMonth';
         currentIndustry = 'ALL';
 
-        function refresh() {
-            updateTenantStats(list, currentIndustry);
-            renderTenantRows(list, currentIndustry);
-        }
-        refresh();
-
-        var filterRoot = el('ops-industry-filter');
-        if (filterRoot) {
-            filterRoot.addEventListener('click', function (e) {
-                var btn = e.target.closest('[data-industry]');
-                if (!btn) return;
-                currentIndustry = btn.getAttribute('data-industry') || 'ALL';
-                filterRoot.querySelectorAll('.ops-filter-chip').forEach(function (b) {
-                    var on = b.getAttribute('data-industry') === currentIndustry;
-                    b.className = on
-                        ? 'ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border-2 border-ops-600 bg-ops-600 text-white shadow-md'
-                        : 'ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300';
-                });
-                refresh();
+        function mergedRows() {
+            return list.map(function (t) {
+                return mergeTenantForTree(t, catalog);
             });
         }
 
-        var tbody = el('ops-tenant-table-body');
-        if (tbody) {
-            tbody.addEventListener('click', function (e) {
+        function filteredSorted() {
+            var rows = mergedRows().filter(function (row) {
+                return currentIndustry === 'ALL' || row.raw.industry === currentIndustry;
+            });
+            rows.sort(function (a, b) {
+                var va = a[sortKey];
+                var vb = b[sortKey];
+                if (vb !== va) return vb - va;
+                return String(a.raw.name).localeCompare(String(b.raw.name));
+            });
+            return rows;
+        }
+
+        function renderTree() {
+            var root = el('ops-tree-root');
+            if (!root) return;
+            var rows = filteredSorted();
+            root.innerHTML = rows.map(function (row) {
+                var t = row.raw;
+                var p = row.plan;
+                var open = expanded.has(t.id);
+                var caret = open ? 'ph-caret-down' : 'ph-caret-right';
+                var frozen = t.frozen
+                    ? '<span class="text-rose-600 font-bold text-[10px]">已冻结</span>'
+                    : '<span class="text-emerald-600 font-bold text-[10px]">正常</span>';
+                var ind = industryLabel[t.industry] || t.industry;
+                var orig = p.priceOriginalYear || 0;
+                var cur = p.priceCurrentYear || 0;
+                var off = computeDiscountPercentFromYearPrices(orig, cur);
+                var ribbon = p.discountLabel
+                    ? '<span class="inline-block mt-1 px-2 py-0.5 rounded-lg bg-rose-50 text-rose-700 text-[9px] font-black">' + escapeHtml(p.discountLabel) + '</span>'
+                    : '';
+                var promo = p.promoNote
+                    ? '<p class="text-[9px] text-slate-500 mt-1 leading-snug">' + escapeHtml(p.promoNote) + '</p>'
+                    : '';
+                var zhe = orig > 0 ? (Math.round((cur / orig) * 1000) / 100).toFixed(1) : '—';
+                var discLine = off > 0
+                    ? '<p class="text-[9px] font-black text-ops-600">约减 ' + off + '% · 合 ' + zhe + ' 折</p>'
+                    : '';
+
+                var subHidden = open ? '' : 'hidden';
+                var userBlock = row.users.map(function (u) {
+                    return (
+                        '<div class="border-b border-indigo-50/80 last:border-0 py-2 pl-2">' +
+                        '<div class="flex flex-wrap items-center justify-between gap-2">' +
+                        '<div><span class="text-xs font-bold text-slate-800">' + escapeHtml(u.name) + '</span>' +
+                        '<span class="ml-2 text-[10px] font-bold text-slate-400">' + escapeHtml(u.role) + '</span></div>' +
+                        '<span class="text-[10px] font-mono text-ops-700 font-bold">Σ ' + formatTokens(u.tokensMonth) + '</span></div>' +
+                        '<div class="mt-1 pl-2 text-[10px] text-slate-500 font-mono">提取 ' + formatTokens(u.extractMonth) + ' · 对话 ' + formatTokens(u.chatMonth) + '</div></div>'
+                    );
+                }).join('');
+
+                return (
+                    '<div class="tm-ops-glass rounded-tm-3xl border border-indigo-100/80 overflow-hidden shadow-sm" data-tenant-id="' + escapeHtml(t.id) + '">' +
+                    '<div class="flex flex-wrap items-start gap-2 p-4 bg-white/60">' +
+                    '<button type="button" class="ops-tree-toggle shrink-0 w-9 h-9 rounded-xl border border-indigo-100 flex items-center justify-center text-ops-600 hover:bg-ops-50" data-tenant-id="' + escapeHtml(t.id) + '" title="展开/收起">' +
+                    '<i class="ph ' + caret + ' text-lg"></i></button>' +
+                    '<div class="flex-1 min-w-0">' +
+                    '<div class="flex flex-wrap items-center gap-2">' +
+                    '<span class="text-sm font-black text-slate-800">' + escapeHtml(t.name) + '</span>' +
+                    '<span class="text-[10px] font-mono text-slate-400">' + escapeHtml(t.id) + '</span>' +
+                    frozen +
+                    '<span class="text-[10px] text-slate-500">' + escapeHtml(ind) + '</span></div>' +
+                    '<p class="text-[10px] font-mono text-slate-500 mt-0.5">到期 ' + escapeHtml(t.expiry || '—') + '</p></div>' +
+                    '<div class="flex flex-wrap gap-2 text-[10px] font-mono font-bold text-ops-800 w-full sm:w-auto sm:text-right sm:ml-auto">' +
+                    '<span class="px-2 py-1 rounded-lg bg-ops-50 border border-ops-100">AI月 ' + formatTokens(row.aiTokensMonth) + '</span>' +
+                    '<span class="px-2 py-1 rounded-lg bg-white border border-slate-200">年付 ¥' + row.subscriptionYear + '</span>' +
+                    '<span class="px-2 py-1 rounded-lg bg-white border border-slate-200">营收 ¥' + (row.revenueMonth / 10000).toFixed(1) + '万</span>' +
+                    '<span class="px-2 py-1 rounded-lg bg-white border border-slate-200">利润 ¥' + (row.profitMonth / 10000).toFixed(1) + '万</span></div>' +
+                    '<div class="flex gap-1 w-full sm:w-auto justify-end">' +
+                    '<button type="button" class="ops-act-freeze px-2 py-1.5 rounded-xl text-[10px] font-bold border border-slate-200 hover:bg-slate-50" data-id="' + escapeHtml(t.id) + '">' + (t.frozen ? '解冻' : '冻结') + '</button>' +
+                    '<button type="button" class="ops-act-edit px-2 py-1.5 rounded-xl text-[10px] font-bold bg-ops-600 text-white hover:bg-ops-700" data-id="' + escapeHtml(t.id) + '">权益/到期</button></div></div>' +
+                    '<div class="ops-tree-body border-t border-indigo-100/80 bg-slate-50/40 p-4 ' + subHidden + '">' +
+                    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
+                    '<div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-inner">' +
+                    '<p class="text-[10px] font-black text-ops-600 uppercase tracking-widest mb-2">配额与用量</p>' +
+                    '<div class="space-y-2 text-[11px]">' +
+                    '<div><div class="flex justify-between font-bold text-slate-600"><span>用户数</span><span>' + row.usage.users + ' / ' + p.maxUsers + '</span></div>' + usageBar(row.usage.users, p.maxUsers) + '</div>' +
+                    '<div><div class="flex justify-between font-bold text-slate-600"><span>产品</span><span>' + row.usage.products + ' / ' + p.maxProducts + '</span></div>' + usageBar(row.usage.products, p.maxProducts) + '</div>' +
+                    '<div><div class="flex justify-between font-bold text-slate-600"><span>客户</span><span>' + row.usage.customers + ' / ' + p.maxCustomers + '</span></div>' + usageBar(row.usage.customers, p.maxCustomers) + '</div>' +
+                    '<div><div class="flex justify-between font-bold text-slate-600"><span>供应商</span><span>' + row.usage.suppliers + ' / ' + p.maxSuppliers + '</span></div>' + usageBar(row.usage.suppliers, p.maxSuppliers) + '</div></div></div>' +
+                    '<div class="rounded-2xl border-2 border-ops-200 bg-gradient-to-br from-ops-50/90 to-white p-4 relative overflow-hidden">' +
+                    '<p class="text-[10px] font-black text-ops-700 uppercase tracking-widest">' + escapeHtml(p.name) + '</p>' +
+                    ribbon +
+                    '<p class="text-[10px] text-slate-400 line-through mt-2">原价 ¥' + orig + ' / 年</p>' +
+                    '<div class="flex items-baseline gap-1 mt-1"><span class="text-3xl font-mono font-black text-ops-700">¥' + cur + '</span><span class="text-[10px] font-bold text-slate-400">/ 年</span></div>' +
+                    discLine + promo + '</div></div>' +
+                    '<div class="mt-4 rounded-2xl border border-indigo-100 bg-white/90 p-3">' +
+                    '<p class="text-[10px] font-bold text-slate-500 uppercase mb-2 pl-1">租户 → 用户 → 本月 AI（演示拆分）</p>' +
+                    '<div class="pl-2 border-l-2 border-ops-200 space-y-0">' + userBlock + '</div></div></div></div>'
+                );
+            }).join('');
+
+            updateTenantStats(list, currentIndustry);
+        }
+
+        function wireTreeClicks() {
+            var root = el('ops-tree-root');
+            if (!root) return;
+            root.onclick = function (e) {
+                var tg = e.target.closest('.ops-tree-toggle');
+                if (tg) {
+                    var tid = tg.getAttribute('data-tenant-id');
+                    if (!tid) return;
+                    if (expanded.has(tid)) expanded.delete(tid);
+                    else expanded.add(tid);
+                    renderTree();
+                    return;
+                }
                 var fr = e.target.closest('.ops-act-freeze');
                 var ed = e.target.closest('.ops-act-edit');
                 if (fr) {
                     var id = fr.getAttribute('data-id');
-                    var t = list.find(function (x) {
+                    var tenant = list.find(function (x) {
                         return x.id === id;
                     });
-                    if (!t) return;
-                    t.frozen = !t.frozen;
+                    if (!tenant) return;
+                    tenant.frozen = !tenant.frozen;
                     saveTenants(list);
-                    appendAudit(t.frozen ? 'FREEZE_TENANT' : 'UNFREEZE_TENANT', id + ' ' + t.name);
-                    refresh();
+                    appendAudit(tenant.frozen ? 'FREEZE_TENANT' : 'UNFREEZE_TENANT', id + ' ' + tenant.name);
+                    renderTree();
                     return;
                 }
                 if (ed) {
-                    var tid = ed.getAttribute('data-id');
-                    var tenant = list.find(function (x) {
-                        return x.id === tid;
+                    var tid2 = ed.getAttribute('data-id');
+                    var tenant2 = list.find(function (x) {
+                        return x.id === tid2;
                     });
-                    if (!tenant) return;
-                    el('ops-modal-tenant-id').value = tenant.id;
-                    el('ops-modal-tenant-title').textContent = '运维：' + tenant.name;
+                    if (!tenant2) return;
+                    el('ops-modal-tenant-id').value = tenant2.id;
+                    el('ops-modal-tenant-title').textContent = '运维：' + tenant2.name;
                     el('ops-modal-tenant-sub').textContent = '赠送试用将累加至到期日；或直接指定到期日（二者可只填一项）。';
                     el('ops-input-trial-months').value = '1';
                     el('ops-input-trial-note').value = '';
-                    el('ops-input-expiry-date').value = tenant.expiry || '';
+                    el('ops-input-expiry-date').value = tenant2.expiry || '';
                     el('ops-modal-tenant').classList.remove('hidden');
                 }
-            });
+            };
         }
 
         function closeModal() {
@@ -697,104 +863,59 @@
             });
         }
         var saveBtn = el('ops-btn-save-tenant-ops');
-        if (!saveBtn) return;
-        saveBtn.addEventListener('click', function () {
-            var tid = el('ops-modal-tenant-id').value;
-            var tenant = list.find(function (x) {
-                return x.id === tid;
-            });
-            if (!tenant) return;
-            var months = parseInt(el('ops-input-trial-months').value, 10) || 0;
-            var note = el('ops-input-trial-note').value.trim();
-            var dateStr = el('ops-input-expiry-date').value;
-            if (months > 0) {
-                var d = new Date(tenant.expiry || Date.now());
-                d.setMonth(d.getMonth() + months);
-                tenant.expiry = d.toISOString().slice(0, 10);
-                appendAudit('TRIAL_GRANT', tid + ' +' + months + '月 活动:' + (note || '-') );
-            }
-            if (dateStr) {
-                tenant.expiry = dateStr;
-                appendAudit('SUBSCRIPTION_EXPIRY_SET', tid + ' -> ' + dateStr + ' 备注:' + (note || '-'));
-            }
-            saveTenants(list);
-            closeModal();
-            refresh();
-        });
-    }
-
-    function initQuotaAiPage() {
-        var cards = el('ops-quota-cards');
-        if (cards) {
-            cards.innerHTML = mockQuotaByTenant.map(function (q) {
-                return (
-                    '<div class="rounded-2xl border border-indigo-100 bg-white/80 p-4">' +
-                    '<p class="text-[10px] font-bold text-slate-400 uppercase truncate">' + escapeHtml(q.name) + '</p>' +
-                    '<div class="mt-2 grid grid-cols-3 gap-2 text-center">' +
-                    '<div><p class="text-lg font-black text-ops-700 font-mono">' + q.products + '</p><p class="text-[9px] text-slate-500">产品</p></div>' +
-                    '<div><p class="text-lg font-black text-ops-700 font-mono">' + q.customers + '</p><p class="text-[9px] text-slate-500">客户</p></div>' +
-                    '<div><p class="text-lg font-black text-ops-700 font-mono">' + q.suppliers + '</p><p class="text-[9px] text-slate-500">供应商</p></div>' +
-                    '</div></div>'
-                );
-            }).join('');
-        }
-
-        function renderRank(period) {
-            currentAiPeriod = period;
-            var data = mockAiRank[period] || mockAiRank.day;
-            var tbody = el('ops-ai-rank-body');
-            if (!tbody) return;
-            tbody.innerHTML = data.map(function (row, i) {
-                return (
-                    '<tr class="hover:bg-ops-50/40">' +
-                    '<td class="px-4 py-2 font-mono font-bold text-ops-600">' + (i + 1) + '</td>' +
-                    '<td class="px-4 py-2 font-semibold">' + escapeHtml(row.tenant) + '</td>' +
-                    '<td class="px-4 py-2 font-mono">' + formatTokens(row.tokens) + '</td>' +
-                    '<td class="px-4 py-2 text-slate-600">' + formatTokens(row.extract) + ' / ' + formatTokens(row.chat) + '</td>' +
-                    '<td class="px-4 py-2 text-right"><button type="button" class="ops-ai-drill text-[10px] font-bold text-ops-600 hover:underline" data-tenant="' + escapeHtml(row.tenant) + '">明细</button></td>' +
-                    '</tr>'
-                );
-            }).join('');
-
-            var tabs = el('ops-ai-period-tabs');
-            if (tabs) {
-                tabs.querySelectorAll('.ops-period').forEach(function (b) {
-                    var on = b.getAttribute('data-period') === period;
-                    b.className = on
-                        ? 'ops-period px-4 py-1.5 rounded-xl text-[11px] font-bold bg-white text-ops-700 shadow-sm'
-                        : 'ops-period px-4 py-1.5 rounded-xl text-[11px] font-bold text-slate-500';
+        if (saveBtn) {
+            saveBtn.onclick = function () {
+                var tid = el('ops-modal-tenant-id').value;
+                var tenant = list.find(function (x) {
+                    return x.id === tid;
                 });
-            }
+                if (!tenant) return;
+                var months = parseInt(el('ops-input-trial-months').value, 10) || 0;
+                var note = el('ops-input-trial-note').value.trim();
+                var dateStr = el('ops-input-expiry-date').value;
+                if (months > 0) {
+                    var d = new Date(tenant.expiry || Date.now());
+                    d.setMonth(d.getMonth() + months);
+                    tenant.expiry = d.toISOString().slice(0, 10);
+                    appendAudit('TRIAL_GRANT', tid + ' +' + months + '月 活动:' + (note || '-'));
+                }
+                if (dateStr) {
+                    tenant.expiry = dateStr;
+                    appendAudit('SUBSCRIPTION_EXPIRY_SET', tid + ' -> ' + dateStr + ' 备注:' + (note || '-'));
+                }
+                saveTenants(list);
+                closeModal();
+                renderTree();
+            };
         }
 
-        var tabRoot = el('ops-ai-period-tabs');
-        if (tabRoot) {
-            tabRoot.addEventListener('click', function (e) {
-                var b = e.target.closest('[data-period]');
-                if (!b) return;
-                renderRank(b.getAttribute('data-period') || 'day');
+        var filterRoot = el('ops-industry-filter');
+        if (filterRoot) {
+            filterRoot.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-industry]');
+                if (!btn) return;
+                currentIndustry = btn.getAttribute('data-industry') || 'ALL';
+                filterRoot.querySelectorAll('.ops-filter-chip').forEach(function (b) {
+                    var on = b.getAttribute('data-industry') === currentIndustry;
+                    b.className = on
+                        ? 'ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border-2 border-ops-600 bg-ops-600 text-white shadow-md'
+                        : 'ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300';
+                });
+                renderTree();
             });
         }
 
-        var rankBody = el('ops-ai-rank-body');
-        var detail = el('ops-ai-detail');
-        if (rankBody && detail) {
-            rankBody.addEventListener('click', function (e) {
-                var b = e.target.closest('.ops-ai-drill');
-                if (!b) return;
-                var name = b.getAttribute('data-tenant');
-                detail.innerHTML =
-                    '<p class="font-bold text-slate-700">' + escapeHtml(name) + ' · ' + currentAiPeriod + ' 维度</p>' +
-                    '<p>示例调用链：BillingService.recordAiUsage → OpsService 聚合。</p>' +
-                    '<p class="text-[10px] text-slate-400 mt-2">最近流水（演示）：</p>' +
-                    '<ul class="list-disc pl-4 space-y-1">' +
-                    '<li>2026-05-11 09:12 · EXTRACT · 4.2k tokens</li>' +
-                    '<li>2026-05-11 08:40 · CHAT · 1.1k tokens</li>' +
-                    '<li>2026-05-10 22:05 · EXTRACT · 8.0k tokens</li>' +
-                    '</ul>';
+        var sortSel = el('ops-tree-sort');
+        if (sortSel) {
+            sortSel.addEventListener('change', function () {
+                sortKey = sortSel.value || 'aiTokensMonth';
+                renderTree();
             });
+            sortSel.value = sortKey;
         }
-        renderRank('day');
+
+        wireTreeClicks();
+        renderTree();
     }
 
     function initReferralPage() {
@@ -1054,9 +1175,15 @@
 
     function boot() {
         bindNav();
-        var hash = (location.hash || '').replace(/^#/, '');
-        var route = ROUTES[hash] ? hash : 'tenants';
-        if (!ROUTES[hash]) location.hash = route;
+        var raw = (location.hash || '').replace(/^#/, '');
+        if (raw === 'quota-ai' || raw === 'lifecycle' || raw === 'tenants-lifecycle' || raw === 'metering') {
+            try {
+                history.replaceState(null, '', '#tenants');
+            } catch (e1) { /* ignore */ }
+            raw = 'tenants';
+        }
+        var route = ROUTES[raw] ? raw : 'tenants';
+        if (route !== ((location.hash || '').replace(/^#/, ''))) location.hash = route;
         loadModule(route);
     }
 
@@ -1073,6 +1200,13 @@
     }
     window.addEventListener('hashchange', function () {
         var hash = (location.hash || '').replace(/^#/, '');
+        if (hash === 'quota-ai' || hash === 'lifecycle' || hash === 'tenants-lifecycle' || hash === 'metering') {
+            try {
+                history.replaceState(null, '', '#tenants');
+            } catch (e2) { /* ignore */ }
+            loadModule('tenants');
+            return;
+        }
         if (ROUTES[hash]) loadModule(hash);
     });
 })();

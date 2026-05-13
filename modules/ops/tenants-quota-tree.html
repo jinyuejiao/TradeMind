@@ -1,44 +1,38 @@
 <div class="space-y-6 fade-in">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
         <div class="flex flex-wrap gap-2" id="ops-industry-filter">
             <button type="button" data-industry="ALL" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border-2 border-ops-600 bg-ops-600 text-white shadow-md">全行业</button>
             <button type="button" data-industry="WHOLESALE" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">批发</button>
             <button type="button" data-industry="FOREIGN" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">外贸</button>
             <button type="button" data-industry="ECOM" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">电商</button>
-            <button type="button" data-industry="FACTORY" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">工贸</button>
+            <button type="button" data-industry="FACTORY" class="ops-filter-chip px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200 bg-white/90 text-slate-600 hover:border-ops-300">工贸一体</button>
         </div>
-        <div class="tm-ops-glass rounded-tm-3xl px-5 py-3 flex flex-wrap gap-4 text-center">
-            <div><p class="text-[10px] font-bold text-slate-400 uppercase">租户数</p><p id="ops-stat-tenants" class="text-lg font-black text-ops-700 font-mono">—</p></div>
-            <div class="w-px bg-indigo-100 hidden sm:block"></div>
-            <div><p class="text-[10px] font-bold text-slate-400 uppercase">用户总数</p><p id="ops-stat-users" class="text-lg font-black text-ops-700 font-mono">—</p></div>
-            <div class="w-px bg-indigo-100 hidden sm:block"></div>
-            <div><p class="text-[10px] font-bold text-slate-400 uppercase">管理员 / 运营 / 其他</p><p id="ops-stat-roles" class="text-xs font-bold text-slate-600">—</p></div>
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+            <label class="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">租户排序</label>
+            <select id="ops-tree-sort" class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-ops-500 min-w-[200px]">
+                <option value="aiTokensMonth">AI 使用量（Tokens/月）</option>
+                <option value="subscriptionYear">订阅金额（年付现价）</option>
+                <option value="revenueMonth">营业额（月）</option>
+                <option value="profitMonth">利润（月）</option>
+            </select>
+            <div class="tm-ops-glass rounded-tm-3xl px-4 py-3 flex flex-wrap gap-4 text-center text-[10px]">
+                <div><span class="font-bold text-slate-400 uppercase">租户</span><p id="ops-stat-tenants" class="text-lg font-black text-ops-700 font-mono leading-tight">—</p></div>
+                <div class="w-px bg-indigo-100 hidden sm:block"></div>
+                <div><span class="font-bold text-slate-400 uppercase">用户</span><p id="ops-stat-users" class="text-lg font-black text-ops-700 font-mono leading-tight">—</p></div>
+                <div class="w-px bg-indigo-100 hidden sm:block"></div>
+                <div class="text-left max-w-[200px]"><span class="font-bold text-slate-400 uppercase">角色</span><p id="ops-stat-roles" class="text-xs font-bold text-slate-600 leading-tight mt-0.5">—</p></div>
+            </div>
         </div>
     </div>
 
-    <div class="tm-ops-glass rounded-tm-3xl overflow-hidden">
-        <div class="px-5 py-4 border-b border-indigo-100/80 flex items-center justify-between bg-white/50">
-            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i class="ph ph-users-three text-ops-600"></i> 租户透视</h2>
-            <span class="text-[10px] font-bold text-slate-400">GET /api/ops/tenants/summary · Feign TenantAdminClient</span>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-ops-50/80 text-[10px] uppercase font-bold text-ops-800 tracking-wider">
-                    <tr>
-                        <th class="px-4 py-3">租户</th>
-                        <th class="px-4 py-3">行业</th>
-                        <th class="px-4 py-3">状态</th>
-                        <th class="px-4 py-3">到期日</th>
-                        <th class="px-4 py-3 text-right">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="ops-tenant-table-body" class="divide-y divide-indigo-50 bg-white/60"></tbody>
-            </table>
-        </div>
+    <div class="tm-ops-glass rounded-tm-3xl p-4 md:p-5 border border-indigo-100/80">
+        <p class="text-[10px] text-slate-500 leading-relaxed"><strong class="text-ops-700">租户看板</strong>：树状结构 租户 → 用户 → 用户 AI 使用（提取 / 对话 Tokens）。订阅卡片对齐租户端会员中心（原价划线、年付现价、促销文案、配额与<strong>实际用量</strong>）。数据为演示聚合，对接 Feign 后替换。</p>
+        <p class="text-[10px] text-slate-400 mt-2 font-mono">GET /api/ops/tenants/tree?sort=…&industry=… · Billing / AI / 经营指标聚合</p>
     </div>
+
+    <div id="ops-tree-root" class="space-y-4 list-scrollbar-ops max-h-[calc(100vh-14rem)] overflow-y-auto pr-1"></div>
 </div>
 
-<!-- 权益赠送 / 调整到期日 -->
 <div id="ops-modal-tenant" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 tm-ops-modal-backdrop">
     <div class="bg-white rounded-tm-3xl shadow-2xl max-w-md w-full p-6 md:p-8 relative fade-in border border-indigo-100">
         <button type="button" id="ops-modal-tenant-close" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="ph ph-x text-xl"></i></button>
