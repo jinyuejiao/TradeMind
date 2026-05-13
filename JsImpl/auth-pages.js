@@ -153,6 +153,10 @@
         var u = $('login-username');
         var p = $('login-password');
         sessionStorage.setItem('tm_auth_username', u.value.trim());
+        try {
+            var existing = localStorage.getItem('tm_tenant_merchant_display_name');
+            if (!existing) localStorage.setItem('tm_tenant_merchant_display_name', u.value.trim());
+        } catch (e) { /* ignore */ }
         /* 演示：登录成功不带回服务端商户类型时，沿用本机已登记的租户类型 */
         var persisted = tmGetStoredTenantMerchantType();
         if (persisted) {
@@ -178,6 +182,12 @@
         if (merchant && merchant.value) {
             persistTenantMerchantType(merchant.value);
         }
+        var regUser = $('reg-username');
+        var regCo = $('reg-company');
+        var displayName = (regCo && regCo.value.trim()) || (regUser && regUser.value.trim()) || '';
+        try {
+            if (displayName) localStorage.setItem('tm_tenant_merchant_display_name', displayName);
+        } catch (e) { /* ignore */ }
         sessionStorage.setItem('tm_auth_username', $('reg-username').value.trim());
         alert('注册成功（演示），将跳转登录页');
         window.location.href = './login.html';

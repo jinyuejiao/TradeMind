@@ -23,6 +23,7 @@
     <link rel="preload" href="./Core/partials/mobile-bottom-nav.html" as="fetch" crossorigin>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -48,7 +49,7 @@
             }
         };
     </script>
-    <script src="./JsImpl/main.js?v=tm-ui-5"></script>
+    <script src="./JsImpl/main.js?v=tm-ui-8"></script>
     <script src="./JsImpl/product-center.js?v=tm-ui-4"></script>
     <script src="./MobileAdapt/TM_Responsive.js?v=tm-ui-2"></script>
     <script src="./Adaptation/TM_RoleGate.js?v=tm-ui-2"></script>
@@ -74,75 +75,28 @@
         <div class="absolute inset-0" onclick="closeMemberModal()"></div>
         <div class="relative bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col fade-in modal-content-box text-left">
 
-            <!-- 头部 -->
-            <div class="px-8 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-[#14B8A6] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#14B8A6]/30">
-                        <i class="ph ph-brain text-xl"></i>
+            <!-- 头部：标题 + 顶栏订阅摘要（小字）+ 子账号入口 + 关闭 -->
+            <div class="px-4 md:px-8 py-3 border-b border-slate-100 flex items-center gap-2 md:gap-3 bg-white shrink-0">
+                <div class="flex items-center gap-2 md:gap-3 shrink-0 min-w-0 max-w-[40%] sm:max-w-none">
+                    <div class="w-9 h-9 md:w-10 md:h-10 bg-[#14B8A6] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#14B8A6]/30 shrink-0">
+                        <i class="ph ph-brain text-lg md:text-xl"></i>
                     </div>
-                    <div>
-                        <h2 class="text-sm font-black text-slate-800 tracking-tight">TradeMind 会员中心</h2>
-                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Subscription Protocol v1.9</p>
+                    <div class="min-w-0">
+                        <h2 class="text-xs sm:text-sm font-black text-slate-800 tracking-tight leading-tight truncate">TradeMind 会员中心</h2>
+                        <p class="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate hidden sm:block">Protocol v1.9</p>
                     </div>
                 </div>
-                <button onclick="closeMemberModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i class="ph ph-x text-xl text-slate-400"></i></button>
+                <div class="flex-1 min-w-0 flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                    <p id="member-header-subscription" class="text-[9px] sm:text-[10px] md:text-[11px] text-slate-500 leading-snug text-right"></p>
+                    <button type="button" id="member-btn-open-accounts" onclick="openMemberAccountsManageModal()" class="hidden shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700 transition flex items-center justify-center" title="子账号管理">
+                        <i class="ph ph-user-gear text-lg md:text-xl"></i>
+                    </button>
+                </div>
+                <button type="button" onclick="closeMemberModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0" aria-label="关闭"><i class="ph ph-x text-xl text-slate-400"></i></button>
             </div>
 
             <!-- 主体内容：适配单屏展示 -->
             <div class="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar space-y-6">
-                <!-- 已订阅：当前会员类型 / 到期日 / 推荐码 -->
-                <div id="member-subscribed-summary" class="hidden rounded-[1.75rem] border border-teal-100 bg-gradient-to-br from-teal-50/90 to-white p-5 md:p-6 shadow-sm">
-                    <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-4">当前订阅</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">会员类型</p>
-                            <p id="member-summary-plan" class="text-lg font-black text-slate-800">—</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">到期日</p>
-                            <p id="member-summary-expiry" class="text-lg font-mono font-bold text-slate-700">—</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">专属推荐码</p>
-                            <p id="member-summary-referral" class="text-lg font-mono font-black text-teal-800 tracking-tight">—</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 优享会员：子账号管理（不含主账号，最多再建 4 个） -->
-                <div id="member-premium-users-section" class="hidden space-y-4">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">商户子账号</h3>
-                        <span id="member-subuser-count-badge" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg"></span>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-inner">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs min-w-[320px]">
-                                <thead class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
-                                    <tr>
-                                        <th class="px-4 py-3">用户名称</th>
-                                        <th class="px-4 py-3 w-44">角色类型</th>
-                                        <th class="px-4 py-3 w-24 text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="member-subusers-tbody" class="divide-y divide-slate-100 text-slate-700"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
-                        <div class="flex-1 min-w-[140px]">
-                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">新建用户</label>
-                            <input type="text" id="member-new-user-name" maxlength="32" placeholder="用户名称" class="form-input w-full text-sm" />
-                        </div>
-                        <div class="w-full sm:w-40">
-                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">角色</label>
-                            <select id="member-new-user-role" class="form-input w-full text-sm"></select>
-                        </div>
-                        <button type="button" onclick="memberAddSubUser()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 transition shrink-0 h-[42px] sm:h-[42px]">新建用户</button>
-                    </div>
-                    <p id="member-subuser-limit-hint" class="text-[10px] text-slate-400"></p>
-                </div>
-
                 <!-- 订阅等级对比 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- 启航会员 -->
@@ -168,7 +122,7 @@
                                 </div>
                                 <p id="plan-launch-discount" class="mt-1 text-[10px] font-black text-brand-600 uppercase tracking-widest">首发折扣计算中...</p>
                             </div>
-                            <button type="button" onclick="memberSubscribePlan('starter')" class="px-6 py-3 rounded-xl border-2 border-slate-800 text-slate-800 text-xs font-black hover:bg-slate-800 hover:text-white transition shrink-0">订阅启航</button>
+                            <button type="button" id="member-btn-checkout-starter" onclick="memberStartCheckout('starter')" class="px-6 py-3 rounded-xl border-2 border-slate-800 text-slate-800 text-xs font-black hover:bg-slate-800 hover:text-white transition shrink-0">前往支付 · 订阅启航</button>
                         </div>
                     </div>
 
@@ -200,7 +154,7 @@
                                 </div>
                                 <p id="plan-plus-discount" class="text-[10px] font-black text-[#14B8A6] uppercase tracking-widest mt-1">首发折扣计算中...</p>
                             </div>
-                            <button type="button" onclick="memberSubscribePlan('premium')" class="mb-1 px-8 py-3 bg-[#14B8A6] text-white rounded-xl font-black text-xs shadow-xl shadow-[#14B8A6]/30 hover:bg-[#0D9488] transition-all active:scale-95">立即升级</button>
+                            <button type="button" id="member-btn-checkout-premium" onclick="memberStartCheckout('premium')" class="mb-1 px-8 py-3 bg-[#14B8A6] text-white rounded-xl font-black text-xs shadow-xl shadow-[#14B8A6]/30 hover:bg-[#0D9488] transition-all active:scale-95">前往支付 · 立即升级</button>
                         </div>
                     </div>
                 </div>
@@ -208,25 +162,34 @@
                 <!-- 2. 推荐官计划 (保留金色 UI) -->
                 <div class="gold-referral-card rounded-[2rem] p-5 relative overflow-hidden shadow-sm">
                     <div class="absolute -right-8 -top-8 opacity-10 rotate-12"><i class="ph ph-medal text-[10rem] text-amber-600"></i></div>
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-[0_8px_24px_rgba(30,64,175,0.35)] bg-gradient-to-br from-indigo-600 via-blue-500 to-cyan-400 text-white">
-                                <i class="ph ph-rocket-launch text-2xl"></i>
+                    <div class="flex flex-col gap-4 relative z-10">
+                        <div class="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                            <div class="flex items-center gap-4 shrink-0">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-[0_8px_24px_rgba(30,64,175,0.35)] bg-gradient-to-br from-indigo-600 via-blue-500 to-cyan-400 text-white">
+                                    <i class="ph ph-rocket-launch text-2xl"></i>
+                                </div>
+                                <div class="text-left min-w-0">
+                                    <h3 class="text-base font-black text-amber-900 flex items-center gap-2">巨猿推荐官计划 <i class="ph ph-sparkle-fill text-amber-500 text-xs"></i></h3>
+                                    <p class="text-[11px] text-amber-800 leading-tight">每成功邀请一位用户完成<span class="font-black">首笔付费订阅</span>，立返 <span class="font-black text-amber-900 underline decoration-amber-400">¥ 100</span> 现金奖励。</p>
+                                </div>
                             </div>
-                            <div class="text-left">
-                                <h3 class="text-base font-black text-amber-900 flex items-center gap-2">巨猿推荐官计划 <i class="ph ph-sparkle-fill text-amber-500 text-xs"></i></h3>
-                                <p class="text-[11px] text-amber-800 leading-tight">每成功邀请一位用户订阅，立返 <span class="font-black text-amber-900 underline decoration-amber-400">¥ 100</span> 现金奖励。</p>
+                            <!-- 推荐码 + 操作：单列堆叠，大屏横向对齐 -->
+                            <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-stretch gap-3">
+                                <div class="flex-1 rounded-2xl bg-white/80 backdrop-blur-sm border border-amber-300/90 px-4 py-3 shadow-sm flex flex-col justify-center">
+                                    <p class="text-[8px] font-black text-amber-700 uppercase tracking-widest mb-1">专属推荐码</p>
+                                    <p id="member-referral-inline" class="text-xl sm:text-2xl font-mono font-black text-amber-950 tracking-tight break-all leading-tight">GIGA-JIN-8821</p>
+                                </div>
+                                <div class="flex sm:flex-col gap-2 sm:min-w-[140px] shrink-0">
+                                    <button type="button" onclick="openReferralListModal()" class="flex-1 sm:flex-none px-4 py-3 rounded-2xl border-2 border-amber-700/35 bg-white/90 text-amber-900 text-xs font-black hover:bg-amber-50 transition flex items-center justify-center gap-2 shadow-sm">
+                                        <i class="ph ph-users-three text-lg"></i> 推荐名单
+                                    </button>
+                                    <button type="button" onclick="showPoster()" class="flex-1 sm:flex-none px-4 py-3 bg-amber-600 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 hover:bg-amber-700 active:scale-[0.98] transition-all">
+                                        <i class="ph ph-image-square-bold text-lg"></i> 生成海报
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 w-full md:w-auto">
-                            <div class="bg-white/70 backdrop-blur-sm px-5 py-2 rounded-xl border border-amber-300 text-center flex-1 md:flex-none">
-                                <p class="text-[8px] font-black text-amber-700 uppercase tracking-widest mb-1">专属推荐码</p>
-                                <p id="member-referral-inline" class="text-lg font-mono font-black text-amber-900 tracking-tighter">GIGA-JIN-8821</p>
-                            </div>
-                            <button onclick="showPoster()" class="px-6 py-4 bg-amber-600 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 hover:bg-amber-700 active:scale-95 transition-all">
-                                <i class="ph ph-image-square-bold text-lg"></i> 生成海报
-                            </button>
-                        </div>
+                        <p class="text-[10px] text-amber-800/80 font-medium leading-relaxed">有效数以「被推荐人完成首笔付费订阅」为准，与运营结算口径一致；演示数据存于本机。</p>
                     </div>
                 </div>
             </div>
@@ -235,13 +198,137 @@
         </div>
     </div>
 
+    <!-- 子账号管理（由顶栏齿轮图标打开） -->
+    <div id="member-accounts-manage-modal" class="hidden fixed inset-0 z-[108] flex items-end md:items-center justify-center p-0 md:p-6">
+        <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]" onclick="closeMemberAccountsManageModal()"></div>
+        <div class="relative bg-white w-full md:max-w-lg md:rounded-[2rem] rounded-t-[2rem] shadow-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-100">
+            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center shrink-0 bg-gradient-to-r from-slate-50 to-white">
+                <div>
+                    <h3 class="text-sm font-black text-slate-800">商户子账号</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">优享版含主账号共 5 席，最多再建 4 个子账号</p>
+                </div>
+                <button type="button" onclick="closeMemberAccountsManageModal()" class="p-2 hover:bg-slate-100 rounded-full" aria-label="关闭"><i class="ph ph-x text-xl text-slate-400"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">账号列表</span>
+                    <span id="member-subuser-count-badge" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg"></span>
+                </div>
+                <p id="member-premium-users-gate-hint" class="hidden text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">当前登录账号非主管理员，子账号增删改由主管理员操作。</p>
+                <div id="member-premium-users-editor" class="space-y-4">
+                    <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-inner">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs min-w-[360px]">
+                                <thead class="bg-slate-50 text-slate-400 font-bold border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-4 py-3">用户名</th>
+                                        <th class="px-4 py-3 w-40">角色</th>
+                                        <th class="px-4 py-3 w-28 text-center">登录密码</th>
+                                        <th class="px-4 py-3 w-28 text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="member-subusers-tbody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                        <div class="sm:col-span-4">
+                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">用户名</label>
+                            <input type="text" id="member-new-user-name" maxlength="32" placeholder="登录用户名" class="form-input w-full text-sm" autocomplete="off" />
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">初始密码</label>
+                            <input type="password" id="member-new-user-password" maxlength="64" placeholder="至少 6 位" class="form-input w-full text-sm" autocomplete="new-password" />
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">角色</label>
+                            <select id="member-new-user-role" class="form-input w-full text-sm"></select>
+                        </div>
+                        <div class="sm:col-span-2 flex">
+                            <button type="button" onclick="memberAddSubUser()" class="w-full px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 transition h-[42px]">新建</button>
+                        </div>
+                    </div>
+                    <p id="member-subuser-limit-hint" class="text-[10px] text-slate-400"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 推荐名单（二级弹层） -->
+    <div id="referral-list-modal" class="hidden fixed inset-0 z-[105] flex items-end md:items-center justify-center p-0 md:p-6">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onclick="closeReferralListModal()"></div>
+        <div class="relative bg-white w-full md:max-w-lg md:rounded-[2rem] rounded-t-[2rem] shadow-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="text-sm font-black text-slate-800">我的推荐名单</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">有效订阅 <span id="referral-modal-qualified" class="text-teal-600 font-black">0</span> 人</p>
+                </div>
+                <button type="button" onclick="closeReferralListModal()" class="p-2 hover:bg-slate-100 rounded-full"><i class="ph ph-x text-xl text-slate-400"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <table class="w-full text-left text-xs">
+                    <thead class="text-slate-400 font-bold border-b border-slate-100">
+                        <tr>
+                            <th class="py-2 pr-2">被推荐方</th>
+                            <th class="py-2 px-1">邀请日</th>
+                            <th class="py-2 pl-1 text-right">状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referral-list-tbody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                </table>
+                <p id="referral-list-empty" class="hidden text-center text-slate-400 text-xs py-10">暂无推荐记录</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 支付跳转演示 -->
+    <div id="member-checkout-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="memberCancelCheckout()"></div>
+        <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-8 text-center">
+            <div id="member-checkout-spinner" class="w-14 h-14 mx-auto rounded-full border-4 border-teal-100 border-t-[#14B8A6] animate-spin mb-6"></div>
+            <p id="member-checkout-title" class="text-sm font-black text-slate-800 mb-2">正在跳转收银台</p>
+            <p id="member-checkout-desc" class="text-xs text-slate-500 leading-relaxed mb-6">演示环境将模拟支付完成；生产环境应跳转第三方支付页或拉起 SDK。</p>
+            <button type="button" id="member-checkout-cancel" onclick="memberCancelCheckout()" class="text-xs font-bold text-slate-400 hover:text-slate-600">取消</button>
+        </div>
+    </div>
+
+    <!-- 编辑子账号 -->
+    <div id="member-subuser-edit-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeMemberSubUserEditModal()"></div>
+        <div class="relative bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-6 md:p-8 text-left">
+            <div class="flex justify-between items-start mb-6">
+                <h3 class="text-sm font-black text-slate-800">编辑子账号</h3>
+                <button type="button" onclick="closeMemberSubUserEditModal()" class="p-1 hover:bg-slate-100 rounded-full"><i class="ph ph-x text-lg text-slate-400"></i></button>
+            </div>
+            <input type="hidden" id="member-edit-subuser-id" value="" />
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">用户名</label>
+                    <input type="text" id="member-edit-subuser-name" maxlength="32" class="form-input w-full text-sm" />
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">角色</label>
+                    <select id="member-edit-subuser-role" class="form-input w-full text-sm"></select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">新密码（留空则不修改）</label>
+                    <input type="password" id="member-edit-subuser-password" maxlength="64" placeholder="可选" class="form-input w-full text-sm" autocomplete="new-password" />
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button type="button" onclick="closeMemberSubUserEditModal()" class="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">取消</button>
+                <button type="button" onclick="memberSaveSubUserEdit()" class="flex-1 py-3 rounded-xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800">保存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= [2. 品牌推荐海报弹窗] ================= -->
-    <div id="poster-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden p-4">
+    <div id="poster-modal" class="fixed inset-0 z-[115] flex items-center justify-center hidden p-4">
         <!-- 遮罩 -->
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closePoster()"></div>
 
         <!-- 弹窗主体 (已移除左侧，仅保留推荐页，宽度调整为 max-w-lg) -->
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[460px] overflow-hidden relative z-10 animate-in fade-in zoom-in duration-300">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[420px] overflow-hidden relative z-10 animate-in fade-in zoom-in duration-300">
 
             <!-- 关闭按钮 -->
             <button onclick="closePoster()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-900 z-20 transition-colors">
@@ -256,60 +343,97 @@
                 </div>
 
                 <!-- 海报快照区域 (html2canvas 将截取此处) -->
-                <div id="poster-capture-area" class="w-full p-2 bg-white rounded-[2.8rem] shadow-xl">
-                    <!-- 海报主体：内联样式确保渐变生效 -->
-                    <div class="w-full aspect-[3/4.2] rounded-[2.2rem] p-8 flex flex-col relative overflow-hidden text-white"
-                         style="background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);">
+                <div id="poster-capture-area" class="w-full p-2 bg-gradient-to-b from-slate-100 to-white rounded-[2.5rem] shadow-xl">
+                    <div class="w-full rounded-[2rem] flex flex-col gap-3 relative overflow-hidden text-white ring-1 ring-slate-200/80 shadow-inner py-3"
+                         style="background: linear-gradient(145deg, #0f766e 0%, #14B8A6 38%, #0d9488 72%, #115e59 100%);">
 
-                        <!-- 装饰光晕 -->
-                        <div class="absolute top-[-10%] right-[-10%] w-40 h-40 bg-white/20 rounded-full blur-[40px]"></div>
-                        <div class="absolute bottom-[20%] left-[-20%] w-32 h-32 bg-teal-300/20 rounded-full blur-[30px]"></div>
+                        <!-- 纹理与光效 -->
+                        <div class="pointer-events-none absolute inset-0 opacity-[0.12]" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+                        <div class="absolute -top-20 -right-16 w-56 h-56 rounded-full bg-emerald-300/35 blur-3xl"></div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-32 bg-gradient-to-t from-black/20 to-transparent"></div>
 
-                        <!-- Header -->
-                        <div class="flex items-center gap-2 mb-8 relative z-10">
-                            <div class="bg-white/20 backdrop-blur-md p-1.5 rounded-lg border border-white/30">
-                                <i class="ph ph-intersect text-white text-lg"></i>
+                        <!-- 顶部品牌条 -->
+                        <div class="relative z-10 mx-4 mt-4 flex items-center justify-between rounded-xl px-2.5 py-2 bg-black/15 backdrop-blur-md border border-white/20">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20 ring-1 ring-white/30">
+                                    <i class="ph ph-intersect text-base text-white"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-[9px] font-black uppercase tracking-[0.18em] text-white/90 truncate">TradeMind</p>
+                                    <p class="text-[8px] font-bold text-teal-100/90 truncate">智能经营 · 一体化</p>
+                                </div>
                             </div>
-                            <span class="text-sm font-black tracking-tighter uppercase italic">TradeMind AI</span>
+                            <span class="shrink-0 rounded-full bg-amber-400/95 px-2 py-0.5 text-[8px] font-black text-amber-950 shadow-md">邀新有礼</span>
                         </div>
 
-                        <!-- Slogan -->
-                        <h4 class="text-2xl font-bold leading-tight mb-8 relative z-10">
-                            推荐好友开通 TradeMind<br>
-                            <span style="color: #99f6e4;">一起提升订单与回款效率</span>
-                        </h4>
+                        <!-- 主标题 -->
+                        <div class="relative z-10 px-5 pt-4 pb-1">
+                            <p class="text-[9px] font-bold uppercase tracking-widest text-teal-100/85 mb-1">为什么选择我们</p>
+                            <h4 class="text-lg sm:text-xl font-black leading-snug tracking-tight drop-shadow-md">
+                                经营提效<br />
+                                <span class="text-teal-50">从订单到决策，一屏掌控</span>
+                            </h4>
+                        </div>
 
-                        <!-- 核心卖点 -->
-                        <div class="space-y-3 mb-auto relative z-10">
-                            <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 3分钟完成提单录入，减少人工错误
+                        <!-- 能力卡片网格（与底部推荐码区留间距，避免叠层遮挡） -->
+                        <div class="relative z-10 shrink-0 px-4 pb-0 grid grid-cols-2 gap-2 content-start">
+                            <div class="rounded-xl bg-white/12 backdrop-blur-sm border border-white/20 p-2.5 shadow-md">
+                                <div class="mb-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-amber-300/90 text-amber-950">
+                                    <i class="ph ph-sparkle text-sm"></i>
+                                </div>
+                                <p class="text-[10px] font-black leading-tight">AI 订单提取</p>
+                                <p class="mt-0.5 text-[8px] leading-snug text-white/88">语音/拍照/文本录单</p>
                             </div>
-                            <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 智能库存预警，降低缺货与积压风险
+                            <div class="rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 p-2.5 shadow-sm">
+                                <div class="mb-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-white/25 text-white">
+                                    <i class="ph ph-clipboard-text text-sm"></i>
+                                </div>
+                                <p class="text-[10px] font-black leading-tight">进货清单</p>
+                                <p class="mt-0.5 text-[8px] leading-snug text-white/88">库存 + 进货建议</p>
                             </div>
-                            <div class="flex items-center gap-2 text-[10px] font-medium text-white/90">
-                                <i class="ph ph-sparkle-fill text-yellow-300"></i> 多维经营看板，决策更快更稳
+                            <div class="rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 p-2.5 shadow-sm">
+                                <div class="mb-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-300/80 text-teal-950">
+                                    <i class="ph ph-chart-line-up text-sm"></i>
+                                </div>
+                                <p class="text-[10px] font-black leading-tight">智能经营分析</p>
+                                <p class="mt-0.5 text-[8px] leading-snug text-white/88">瓶颈定位与优化</p>
+                            </div>
+                            <div class="rounded-xl bg-white/12 backdrop-blur-sm border border-white/20 p-2.5 shadow-md">
+                                <div class="mb-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-200/90 text-emerald-950">
+                                    <i class="ph ph-chart-bar text-sm"></i>
+                                </div>
+                                <p class="text-[10px] font-black leading-tight">经营报表</p>
+                                <p class="mt-0.5 text-[8px] leading-snug text-white/88">利润·库存·周转</p>
                             </div>
                         </div>
 
-                        <!-- 推荐码卡片区域 (毛玻璃效果内联实现) -->
-                        <div class="mt-8 p-4 rounded-[1.5rem] flex items-center justify-between relative z-10"
-                             style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2);">
-                            <div>
-                                <p class="text-[8px] text-white/60 uppercase tracking-widest mb-0.5 font-bold">我的专属推荐码</p>
-                                <p id="poster-ref-code" class="text-xl font-bold text-white" style="font-family: 'Space Grotesk', monospace; letter-spacing: 0.05em;">TM-778201</p>
-                            </div>
-                            <div class="bg-white p-1.5 rounded-xl shadow-lg">
-                                <!-- 动态二维码 -->
-                                <img id="poster-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=TradeMind-TM778201" class="w-10 h-10" alt="QR">
+                        <!-- 推荐码区：白底高对比，独立一块不参与 flex 挤压 -->
+                        <div class="relative z-20 shrink-0 mx-4 mb-3 mt-1 rounded-2xl overflow-hidden shadow-lg border border-slate-200/90 bg-white">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-teal-500 to-emerald-600"></div>
+                            <div class="flex items-stretch pl-3 pr-3 py-3 gap-3">
+                                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">我的专属推荐码</p>
+                                    <p id="poster-ref-code" class="mt-1 text-xl sm:text-2xl font-black text-slate-900 tracking-tight break-all leading-tight" style="font-family: ui-monospace, SFMono-Regular, monospace;">TM-778201</p>
+                                    <p class="mt-2 text-[9px] font-semibold text-teal-700 leading-snug flex items-start gap-1">
+                                        <i class="ph ph-info shrink-0 mt-0.5 text-teal-600"></i>
+                                        <span>注册或开通时在「推荐码」栏填写本码，权益与返现以活动规则为准。</span>
+                                    </p>
+                                </div>
+                                <div class="hidden sm:flex shrink-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent self-stretch my-1" aria-hidden="true"></div>
+                                <div class="flex flex-col items-center justify-center gap-1 shrink-0">
+                                    <div class="rounded-xl bg-slate-50 p-1.5 ring-2 ring-teal-100 shadow-inner">
+                                        <img id="poster-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=TradeMind-TM778201" class="h-14 w-14 sm:h-[4.5rem] sm:w-[4.5rem] block" alt="QR" />
+                                    </div>
+                                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider">扫码了解</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-6 text-center">
-                    <p class="text-[11px] text-slate-400 leading-relaxed">
-                        邀请好友开通，双方立享 <span class="text-teal-600 font-bold">15天 专业版</span> + <span class="text-amber-600 font-bold">推荐返现奖励</span>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        邀请好友开通，<span class="text-teal-600 font-bold">立享推荐返现</span>
                     </p>
 
                     <!-- 生成并保存海报按钮 -->

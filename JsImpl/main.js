@@ -610,19 +610,34 @@ function toggleSidebar() {
     if (ol) ol.classList.toggle('hidden');
 }
 
-// --- 会员账户与子账号（本地持久化演示） ---
+// --- 会员账户与子账号（本地持久化演示；生产应对接支付与后端哈希存密） ---
 const MEMBERSHIP_STORAGE_KEY = 'tm_membership_account_v1';
 const MEMBER_PREMIUM_SUBUSER_MAX = 4;
 const MEMBER_SUBUSER_ROLES = ['管理员', '运营', '仓库', '财务', '只读'];
+
+function defaultReferralInvitesSeed() {
+    return [
+        { id: 'ref_demo_1', displayName: '杭州优选批发', invitedAt: '2026-02-01', status: 'qualified', firstPaidAt: '2026-02-15' },
+        { id: 'ref_demo_2', displayName: '周老板的店', invitedAt: '2026-03-10', status: 'subscribed', firstPaidAt: '2026-03-18' },
+        { id: 'ref_demo_3', displayName: '小李', invitedAt: '2026-04-02', status: 'registered', firstPaidAt: '' }
+    ];
+}
 
 function defaultMembershipAccount() {
     return {
         subscribed: false,
         plan: null,
         expiryDate: '',
+        trialEndDate: '',
         referralCode: 'GIGA-JIN-8821',
-        subUsers: []
+        subUsers: [],
+        referralInvites: defaultReferralInvitesSeed()
     };
+}
+
+function countQualifiedReferrals(invites) {
+    const list = Array.isArray(invites) ? invites : [];
+    return list.filter(x => x && x.status === 'qualified').length;
 }
 
 function loadMembershipAccount() {
@@ -631,11 +646,19 @@ function loadMembershipAccount() {
         if (!raw) return defaultMembershipAccount();
         const o = JSON.parse(raw);
         const base = defaultMembershipAccount();
-        return {
+        const merged = {
             ...base,
             ...o,
-            subUsers: Array.isArray(o.subUsers) ? o.subUsers : []
+            subUsers: Array.isArray(o.subUsers) ? o.subUsers : [],
+            referralInvites: Array.isArray(o.referralInvites) ? o.referralInvites : defaultReferralInvitesSeed()
         };
+        merged.subUsers = merged.subUsers.map(u => ({
+            id: u.id,
+            name: u.name || '',
+            role: u.role || MEMBER_SUBUSER_ROLES[1],
+            password: typeof u.password === 'string' ? u.password : ''
+        }));
+        return merged;
     } catch (e) {
         return defaultMembershipAccount();
     }
@@ -676,6 +699,29 @@ function membershipPlanLabel(plan) {
     return '—';
 }
 
+/** 主管理员：ADMIN 角色，且用户名为 admin / 以 /admin 结尾，或与注册登记的商户展示名一致（演示） */
+function isPrimaryMerchantAdmin() {
+    try {
+        const role = String((window.TM_UI_CONTEXT && window.TM_UI_CONTEXT.role) || 'ADMIN').toUpperCase();
+        if (role !== 'ADMIN') return false;
+        const uname = (sessionStorage.getItem('tm_auth_username') || '').trim();
+        if (!uname) return true;
+        const low = uname.toLowerCase();
+        if (low === 'admin' || low.endsWith('/admin')) return true;
+        const disp = (localStorage.getItem('tm_tenant_merchant_display_name') || '').trim();
+        if (disp && uname === disp) return true;
+        return false;
+    } catch (e) {
+        return true;
+    }
+}
+
+function referralStatusLabel(status) {
+    if (status === 'qualified') return { text: '有效订阅', cls: 'text-emerald-600 font-black' };
+    if (status === 'subscribed') return { text: '已付费', cls: 'text-teal-600 font-bold' };
+    return { text: '未订阅', cls: 'text-slate-400' };
+}
+
 function buildSubUserRoleOptionsHtml(selected) {
     return MEMBER_SUBUSER_ROLES.map(r =>
         `<option value="${r}"${r === selected ? ' selected' : ''}>${r}</option>`
@@ -684,7 +730,6 @@ function buildSubUserRoleOptionsHtml(selected) {
 
 function renderMemberSubUsersTable() {
     const tbody = document.getElementById('member-subusers-tbody');
-    const roleSel = document.getElementById('member-new-user-role');
     const badge = document.getElementById('member-subuser-count-badge');
     const hint = document.getElementById('member-subuser-limit-hint');
     if (!tbody) return;
@@ -697,21 +742,30 @@ function renderMemberSubUsersTable() {
             ? '已达优享版子账号上限，请先删除用户后再新建。'
             : `优享版含主账号共 5 个席位，您还可创建 ${MEMBER_PREMIUM_SUBUSER_MAX - used} 个子账号。`;
     }
-    tbody.innerHTML = list.map(u => `
+    tbody.innerHTML = list.map(u => {
+        const pwd = u.password && String(u.password).length > 0;
+        const pwdCell = pwd
+            ? '<span class="font-mono text-slate-500 tracking-widest">••••••</span>'
+            : '<span class="text-amber-600 font-bold">未设置</span>';
+        const uid = escapeMemberHtml(u.id);
+        const idJson = JSON.stringify(String(u.id));
+        return `
         <tr class="hover:bg-slate-50/80">
             <td class="px-4 py-3 font-bold text-slate-800">${escapeMemberHtml(u.name)}</td>
             <td class="px-4 py-3">
-                <select class="form-input w-full text-xs member-subuser-role" data-user-id="${escapeMemberHtml(u.id)}" onchange="memberSubUserRoleChange(this.dataset.userId, this.value)">
+                <select class="form-input w-full text-xs member-subuser-role" data-user-id="${uid}" onchange="memberSubUserRoleChange(this.dataset.userId, this.value)" ${!isPrimaryMerchantAdmin() ? 'disabled' : ''}>
                     ${buildSubUserRoleOptionsHtml(u.role)}
                 </select>
             </td>
-            <td class="px-4 py-3 text-center">
+            <td class="px-4 py-3 text-center text-xs">${pwdCell}</td>
+            <td class="px-4 py-3 text-center space-x-1">
+                <button type="button" class="px-2 py-1.5 text-[10px] font-black text-teal-700 hover:bg-teal-50 rounded-lg transition" onclick='memberOpenSubUserEdit(${idJson})'>编辑</button>
                 <button type="button" class="p-1.5 text-risk-high hover:bg-red-50 rounded-lg transition" title="删除" onclick="memberDeleteSubUser(${JSON.stringify(String(u.id))})">
                     <i class="ph ph-trash text-lg"></i>
                 </button>
             </td>
-        </tr>
-    `).join('') || '<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 text-xs">暂无子账号，请在下方新建。</td></tr>';
+        </tr>`;
+    }).join('') || '<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 text-xs">暂无子账号，请在下方新建。</td></tr>';
 }
 
 function escapeMemberHtml(s) {
@@ -722,37 +776,140 @@ function escapeMemberHtml(s) {
 }
 
 function renderMemberModalPanels() {
+    if (window.TM_RoleGate && typeof window.TM_RoleGate.apply === 'function') {
+        window.TM_RoleGate.apply();
+    }
+
     const m = window.membershipAccount;
-    const sumBox = document.getElementById('member-subscribed-summary');
-    const premBox = document.getElementById('member-premium-users-section');
-    const planEl = document.getElementById('member-summary-plan');
-    const expEl = document.getElementById('member-summary-expiry');
-    const refEl = document.getElementById('member-summary-referral');
+    const hdr = document.getElementById('member-header-subscription');
+    const accountsBtn = document.getElementById('member-btn-open-accounts');
+    const gateHint = document.getElementById('member-premium-users-gate-hint');
+    const editor = document.getElementById('member-premium-users-editor');
     const refInline = document.getElementById('member-referral-inline');
 
     const code = m.referralCode || '—';
     if (refInline) refInline.textContent = code;
 
-    if (m.subscribed && m.plan) {
-        if (sumBox) sumBox.classList.remove('hidden');
-        if (planEl) planEl.textContent = membershipPlanLabel(m.plan);
-        if (expEl) expEl.textContent = formatMembershipExpiryDisplay(m.expiryDate);
-        if (refEl) refEl.textContent = code;
-    } else {
-        if (sumBox) sumBox.classList.add('hidden');
+    const dot = '<span class="text-slate-300 mx-0.5 sm:mx-1">·</span>';
+    if (hdr) {
+        if (m.subscribed && m.plan) {
+            hdr.innerHTML =
+                '<span class="text-teal-700 font-black">' + escapeMemberHtml(membershipPlanLabel(m.plan)) + '</span>' +
+                dot +
+                '<span class="text-slate-400">到期</span> <span class="font-mono font-bold text-slate-700">' + escapeMemberHtml(formatMembershipExpiryDisplay(m.expiryDate)) + '</span>' +
+                dot +
+                '<span class="text-slate-400">推荐码</span> <span class="font-mono font-black text-teal-800">' + escapeMemberHtml(code) + '</span>';
+        } else {
+            const trialTxt = m.trialEndDate ? formatMembershipExpiryDisplay(m.trialEndDate) : '—';
+            hdr.innerHTML =
+                '<span class="text-slate-600 font-bold">试用</span>' + dot +
+                '<span class="text-slate-400">到期</span> <span class="font-mono text-slate-700">' + escapeMemberHtml(trialTxt) + '</span>' +
+                dot +
+                '<span class="text-slate-400">推荐码</span> <span class="font-mono font-black text-teal-800">' + escapeMemberHtml(code) + '</span>';
+        }
+    }
+
+    if (accountsBtn) {
+        accountsBtn.classList.toggle('hidden', !(m.subscribed && m.plan === 'premium'));
     }
 
     if (m.subscribed && m.plan === 'premium') {
-        if (premBox) premBox.classList.remove('hidden');
+        const primary = isPrimaryMerchantAdmin();
+        if (gateHint) gateHint.classList.toggle('hidden', primary);
+        if (editor) editor.classList.toggle('hidden', !primary);
         const newRole = document.getElementById('member-new-user-role');
         if (newRole) newRole.innerHTML = buildSubUserRoleOptionsHtml(MEMBER_SUBUSER_ROLES[1]);
         renderMemberSubUsersTable();
-    } else if (premBox) {
-        premBox.classList.add('hidden');
+    }
+
+    updateMemberCheckoutButtons(m);
+}
+
+function updateMemberCheckoutButtons(m) {
+    const b1 = document.getElementById('member-btn-checkout-starter');
+    const b2 = document.getElementById('member-btn-checkout-premium');
+    if (!b1 || !b2) return;
+    const sub = m && m.subscribed && m.plan;
+    b1.disabled = false;
+    b2.disabled = false;
+    b1.classList.remove('opacity-50', 'cursor-not-allowed');
+    b2.classList.remove('opacity-50', 'cursor-not-allowed');
+
+    if (sub === 'starter') {
+        b1.textContent = '当前套餐 · 启航';
+        b1.disabled = true;
+        b1.classList.add('opacity-50', 'cursor-not-allowed');
+        b2.textContent = '前往支付 · 升级优享';
+    } else if (sub === 'premium') {
+        b2.textContent = '当前套餐 · 优享';
+        b2.disabled = true;
+        b2.classList.add('opacity-50', 'cursor-not-allowed');
+        b1.textContent = '启航版（低于当前）';
+        b1.disabled = true;
+        b1.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        b1.textContent = '前往支付 · 订阅启航';
+        b2.textContent = '前往支付 · 立即升级';
     }
 }
 
-window.memberSubscribePlan = function(plan) {
+/**
+ * 联调调试：origRespTxnSsn 不传任何业务内容。
+ * 默认删除该字段（不参与 JSON 上送）；若渠道要求字段占位，可传 { mode: 'empty' } 改为空字符串。
+ * 在报文组装完成、签名/序列化之前调用：tmApplyPaymentDebugRules(payload)
+ */
+window.tmApplyPaymentDebugRules = function (payload, opts) {
+    if (!payload || typeof payload !== 'object') return payload;
+    var mode = (opts && opts.mode) || 'omit';
+    if (mode === 'omit') {
+        try {
+            delete payload.origRespTxnSsn;
+        } catch (e) { /* ignore */ }
+    } else {
+        payload.origRespTxnSsn = '';
+    }
+    return payload;
+};
+
+let _memberCheckoutTimer = null;
+let _memberCheckoutTargetPlan = null;
+
+window.memberStartCheckout = function(plan) {
+    const m = window.membershipAccount;
+    if (m.subscribed && m.plan === plan) return;
+    if (m.subscribed && m.plan === 'premium' && plan === 'starter') {
+        if (typeof showToast === 'function') showToast('当前为优享会员，不支持降级（演示）');
+        else alert('当前为优享会员，不支持降级（演示）');
+        return;
+    }
+    _memberCheckoutTargetPlan = plan;
+    const modal = document.getElementById('member-checkout-modal');
+    if (modal) modal.classList.remove('hidden');
+    if (_memberCheckoutTimer) clearTimeout(_memberCheckoutTimer);
+    _memberCheckoutTimer = setTimeout(function() {
+        _memberCheckoutTimer = null;
+        const target = _memberCheckoutTargetPlan;
+        _memberCheckoutTargetPlan = null;
+        const cm = document.getElementById('member-checkout-modal');
+        if (cm) cm.classList.add('hidden');
+        if (target) {
+            applyMembershipPlanAfterPayment(target);
+            if (typeof showToast === 'function') showToast('演示：支付成功，订阅已生效');
+        }
+    }, 1400);
+};
+
+window.memberCancelCheckout = function() {
+    if (_memberCheckoutTimer) {
+        clearTimeout(_memberCheckoutTimer);
+        _memberCheckoutTimer = null;
+    }
+    _memberCheckoutTargetPlan = null;
+    const modal = document.getElementById('member-checkout-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+function applyMembershipPlanAfterPayment(plan) {
     const m = window.membershipAccount;
     const exp = new Date();
     exp.setFullYear(exp.getFullYear() + 1);
@@ -764,12 +921,20 @@ window.memberSubscribePlan = function(plan) {
     }
     window.saveMembershipAccount();
     renderMemberModalPanels();
+}
+
+window.memberSubscribePlan = function(plan) {
+    applyMembershipPlanAfterPayment(plan);
     if (typeof showToast === 'function') {
         showToast(plan === 'premium' ? '已订阅优享会员（演示）' : '已订阅启航会员（演示）');
     }
 };
 
 window.memberAddSubUser = function() {
+    if (!isPrimaryMerchantAdmin()) {
+        if (typeof showToast === 'function') showToast('仅主管理员可管理子账号');
+        return;
+    }
     const m = window.membershipAccount;
     if (!m.subscribed || m.plan !== 'premium') return;
     const list = m.subUsers || [];
@@ -779,31 +944,44 @@ window.memberAddSubUser = function() {
         return;
     }
     const nameInput = document.getElementById('member-new-user-name');
+    const pwdInput = document.getElementById('member-new-user-password');
     const roleSel = document.getElementById('member-new-user-role');
     const name = (nameInput && nameInput.value || '').trim();
+    const password = (pwdInput && pwdInput.value || '').trim();
     const role = roleSel && roleSel.value ? roleSel.value : MEMBER_SUBUSER_ROLES[1];
     if (!name) {
-        if (typeof showToast === 'function') showToast('请输入用户名称');
-        else alert('请输入用户名称');
+        if (typeof showToast === 'function') showToast('请输入用户名');
+        else alert('请输入用户名');
+        return;
+    }
+    if (password.length < 6) {
+        if (typeof showToast === 'function') showToast('初始密码至少 6 位');
+        else alert('初始密码至少 6 位');
         return;
     }
     if (list.some(u => u.name === name)) {
-        if (typeof showToast === 'function') showToast('该名称已存在');
+        if (typeof showToast === 'function') showToast('该用户名已存在');
         return;
     }
     list.push({
         id: 'su_' + Date.now().toString(36),
         name,
-        role
+        role,
+        password
     });
     m.subUsers = list;
     window.saveMembershipAccount();
     if (nameInput) nameInput.value = '';
+    if (pwdInput) pwdInput.value = '';
     renderMemberSubUsersTable();
     if (typeof showToast === 'function') showToast('子账号已创建');
 };
 
 window.memberDeleteSubUser = function(userId) {
+    if (!isPrimaryMerchantAdmin()) {
+        if (typeof showToast === 'function') showToast('仅主管理员可删除子账号');
+        return;
+    }
     if (!userId || !confirm('确定删除该子账号？')) return;
     const m = window.membershipAccount;
     m.subUsers = (m.subUsers || []).filter(u => String(u.id) !== String(userId));
@@ -813,6 +991,7 @@ window.memberDeleteSubUser = function(userId) {
 };
 
 window.memberSubUserRoleChange = function(userId, newRole) {
+    if (!isPrimaryMerchantAdmin()) return;
     if (!userId) return;
     const m = window.membershipAccount;
     const u = (m.subUsers || []).find(x => String(x.id) === String(userId));
@@ -821,6 +1000,119 @@ window.memberSubUserRoleChange = function(userId, newRole) {
         window.saveMembershipAccount();
         if (typeof showToast === 'function') showToast('角色已更新');
     }
+};
+
+window.memberOpenSubUserEdit = function(userId) {
+    if (!isPrimaryMerchantAdmin()) return;
+    const m = window.membershipAccount;
+    const u = (m.subUsers || []).find(x => String(x.id) === String(userId));
+    if (!u) return;
+    const idEl = document.getElementById('member-edit-subuser-id');
+    const nameEl = document.getElementById('member-edit-subuser-name');
+    const roleEl = document.getElementById('member-edit-subuser-role');
+    const pwdEl = document.getElementById('member-edit-subuser-password');
+    if (idEl) idEl.value = String(u.id);
+    if (nameEl) nameEl.value = u.name || '';
+    if (roleEl) roleEl.innerHTML = buildSubUserRoleOptionsHtml(u.role);
+    if (pwdEl) pwdEl.value = '';
+    const modal = document.getElementById('member-subuser-edit-modal');
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeMemberSubUserEditModal = function() {
+    const modal = document.getElementById('member-subuser-edit-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.memberSaveSubUserEdit = function() {
+    if (!isPrimaryMerchantAdmin()) return;
+    const idEl = document.getElementById('member-edit-subuser-id');
+    const nameEl = document.getElementById('member-edit-subuser-name');
+    const roleEl = document.getElementById('member-edit-subuser-role');
+    const pwdEl = document.getElementById('member-edit-subuser-password');
+    const id = idEl && idEl.value;
+    const name = (nameEl && nameEl.value || '').trim();
+    const role = roleEl && roleEl.value;
+    const password = (pwdEl && pwdEl.value || '').trim();
+    if (!id || !name) {
+        if (typeof showToast === 'function') showToast('请填写用户名');
+        return;
+    }
+    if (password && password.length < 6) {
+        if (typeof showToast === 'function') showToast('新密码至少 6 位');
+        return;
+    }
+    const m = window.membershipAccount;
+    const u = (m.subUsers || []).find(x => String(x.id) === String(id));
+    if (!u) return;
+    if ((m.subUsers || []).some(x => x.name === name && String(x.id) !== String(id))) {
+        if (typeof showToast === 'function') showToast('该用户名已被占用');
+        return;
+    }
+    u.name = name;
+    u.role = role || u.role;
+    if (password) u.password = password;
+    window.saveMembershipAccount();
+    renderMemberSubUsersTable();
+    closeMemberSubUserEditModal();
+    if (typeof showToast === 'function') showToast('已保存');
+};
+
+window.openReferralListModal = function() {
+    const modal = document.getElementById('referral-list-modal');
+    const tbody = document.getElementById('referral-list-tbody');
+    const empty = document.getElementById('referral-list-empty');
+    const qEl = document.getElementById('referral-modal-qualified');
+    const m = window.membershipAccount;
+    const invites = (m && m.referralInvites) || [];
+    if (qEl) qEl.textContent = String(countQualifiedReferrals(invites));
+    if (tbody) {
+        if (!invites.length) {
+            tbody.innerHTML = '';
+            if (empty) empty.classList.remove('hidden');
+        } else {
+            if (empty) empty.classList.add('hidden');
+            tbody.innerHTML = invites.map(r => {
+                const st = referralStatusLabel(r.status);
+                const paid = r.firstPaidAt ? formatMembershipExpiryDisplay(r.firstPaidAt) : '—';
+                return `<tr>
+                    <td class="py-2 pr-2 font-bold text-slate-800">${escapeMemberHtml(r.displayName)}</td>
+                    <td class="py-2 px-1 text-slate-500">${formatMembershipExpiryDisplay(r.invitedAt)}</td>
+                    <td class="py-2 pl-1 text-right"><span class="${st.cls}">${escapeMemberHtml(st.text)}</span><div class="text-[9px] text-slate-400 mt-0.5">首订 ${paid}</div></td>
+                </tr>`;
+            }).join('');
+        }
+    }
+    if (modal) modal.classList.remove('hidden');
+};
+
+window.closeReferralListModal = function() {
+    const modal = document.getElementById('referral-list-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.closeMemberAccountsManageModal = function() {
+    const modal = document.getElementById('member-accounts-manage-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.openMemberAccountsManageModal = function() {
+    window.membershipAccount = loadMembershipAccount();
+    const m = window.membershipAccount;
+    if (!m.subscribed || m.plan !== 'premium') {
+        if (typeof showToast === 'function') showToast('仅优享会员可管理子账号');
+        return;
+    }
+    const primary = isPrimaryMerchantAdmin();
+    const gateHint = document.getElementById('member-premium-users-gate-hint');
+    const editor = document.getElementById('member-premium-users-editor');
+    if (gateHint) gateHint.classList.toggle('hidden', primary);
+    if (editor) editor.classList.toggle('hidden', !primary);
+    const newRole = document.getElementById('member-new-user-role');
+    if (newRole) newRole.innerHTML = buildSubUserRoleOptionsHtml(MEMBER_SUBUSER_ROLES[1]);
+    renderMemberSubUsersTable();
+    const modal = document.getElementById('member-accounts-manage-modal');
+    if (modal) modal.classList.remove('hidden');
 };
 
 function syncPosterReferralFromAccount() {
@@ -868,7 +1160,14 @@ function openMemberModal() {
     document.getElementById('member-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
-function closeMemberModal() { document.getElementById('member-modal').classList.add('hidden'); document.body.style.overflow = ''; }
+function closeMemberModal() {
+    memberCancelCheckout();
+    if (typeof closeReferralListModal === 'function') closeReferralListModal();
+    if (typeof closeMemberSubUserEditModal === 'function') closeMemberSubUserEditModal();
+    if (typeof closeMemberAccountsManageModal === 'function') closeMemberAccountsManageModal();
+    document.getElementById('member-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
 
 // 品牌海报控制
 function showPoster() {
@@ -880,24 +1179,24 @@ function closePoster() { document.getElementById('poster-modal').classList.add('
 * 核心功能：生成并下载海报照片
 */
 async function downloadPoster() {
-    const saveBtn = event.currentTarget;
-    const originalText = saveBtn.innerHTML;
+    const saveBtn = (typeof event !== 'undefined' && event && event.currentTarget) || document.querySelector('#poster-modal button[onclick*="downloadPoster"]');
+    const originalText = saveBtn ? saveBtn.innerHTML : '';
 
-    // 改变按钮状态
-    saveBtn.innerHTML = '<i class="ph ph-circle-notch animate-spin text-lg"></i> 生成中...';
-    saveBtn.disabled = true;
+    if (saveBtn) {
+        saveBtn.innerHTML = '<i class="ph ph-circle-notch animate-spin text-lg"></i> 生成中...';
+        saveBtn.disabled = true;
+    }
 
     const element = document.getElementById('poster-capture-area');
 
     try {
         const canvas = await html2canvas(element, {
             backgroundColor: null,
-            useCORS: true, // 允许加载跨域图片(二维码)
-            scale: 3,      // 提升清晰度
+            useCORS: true,
+            scale: 3,
             borderRadius: 40
         });
 
-        // 转为图片并下载
         const link = document.createElement('a');
         const refCode = (document.getElementById('poster-ref-code')?.innerText || 'TM-REF').replace(/\s+/g, '');
         link.download = `TradeMind-Invite-${refCode}.png`;
@@ -907,8 +1206,10 @@ async function downloadPoster() {
         console.error('海报生成失败:', err);
         alert('保存失败，请稍后重试');
     } finally {
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
     }
 }
 
