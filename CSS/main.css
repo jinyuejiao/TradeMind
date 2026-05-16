@@ -161,6 +161,22 @@ body {
     border: 1px solid #f59e0b;
 }
 
+/* 会员中心顶栏 — 账号管理入口 */
+.member-accounts-entry {
+    background: linear-gradient(135deg, #14B8A6 0%, #0d9488 100%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 2px 12px rgba(20, 184, 166, 0.4);
+}
+
+.member-accounts-entry:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 4px 14px rgba(20, 184, 166, 0.5);
+}
+
+.member-modal-header__sub {
+    word-break: break-word;
+}
+
 /* 推荐海报 - 品牌青蓝色系 (与软件图标保持一致) */
 .poster-card {
     background: linear-gradient(165deg, #0D9488 0%, #14B8A6 100%);
@@ -170,6 +186,38 @@ body {
     text-align: center;
     box-shadow: 0 30px 60px -12px rgba(20, 184, 166, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 推荐海报：底部推荐码为内嵌圆角白卡片，四周露出绿色底 */
+.poster-card-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.poster-features-grid {
+    flex-shrink: 0;
+    margin-bottom: 0.25rem;
+}
+.poster-referral-wrap {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin-top: 0.5rem;
+}
+.poster-referral-footer {
+    width: 100%;
+    max-width: 100%;
+    background: #ffffff !important;
+    isolation: isolate;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.18);
+}
+.poster-referral-body {
+    width: 100%;
+    box-sizing: border-box;
+    background: #ffffff;
 }
 
 /* 磨砂玻璃弹窗 */
@@ -387,6 +435,52 @@ body {
 
     #crm-letter-index {
         right: 0.25rem;
+    }
+
+    /* 会员中心弹窗 — 手机端 */
+    #member-modal .modal-content-box {
+        max-height: 100dvh;
+        height: 100dvh;
+        border-radius: 0;
+    }
+
+    #member-modal .member-modal-header {
+        padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+
+    #member-modal .member-modal-header__sub {
+        text-align: left;
+        line-height: 1.5;
+    }
+
+    #member-modal .member-accounts-entry:not(.hidden) {
+        box-shadow: 0 4px 14px rgba(20, 184, 166, 0.45);
+    }
+
+    #member-modal .member-plan-grid > div {
+        padding: 1rem 1.125rem;
+        border-radius: 1.25rem;
+    }
+
+    #member-modal #plan-launch-price {
+        font-size: 2rem;
+    }
+
+    #member-modal #plan-plus-price {
+        font-size: 2.25rem;
+    }
+
+    #member-modal .member-referral-block {
+        padding: 1rem;
+    }
+
+    #member-modal .member-referral-actions {
+        width: 100%;
+    }
+
+    #member-modal .member-referral-actions > button {
+        width: 100%;
+        min-height: 44px;
     }
 }
 

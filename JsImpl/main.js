@@ -810,7 +810,9 @@ function renderMemberModalPanels() {
     }
 
     if (accountsBtn) {
-        accountsBtn.classList.toggle('hidden', !(m.subscribed && m.plan === 'premium'));
+        const showAccounts = !!(m.subscribed && m.plan === 'premium');
+        accountsBtn.classList.toggle('hidden', !showAccounts);
+        accountsBtn.classList.toggle('flex', showAccounts);
     }
 
     if (m.subscribed && m.plan === 'premium') {
@@ -1115,14 +1117,29 @@ window.openMemberAccountsManageModal = function() {
     if (modal) modal.classList.remove('hidden');
 };
 
+/** 推荐海报二维码落地页（扫码跳转）；生产环境由后端配置下发 */
+const POSTER_QR_LANDING_ORIGIN = 'https://tradmeind.com.cn';
+
+function buildPosterQrTargetUrl(referralCode) {
+    const code = String(referralCode || '').trim();
+    const base = POSTER_QR_LANDING_ORIGIN.replace(/\/$/, '');
+    if (!code) return base + '/';
+    return base + '/?ref=' + encodeURIComponent(code);
+}
+
 function syncPosterReferralFromAccount() {
     const code = (window.membershipAccount && window.membershipAccount.referralCode) || 'GIGA-JIN-8821';
     const el = document.getElementById('poster-ref-code');
     if (el) el.textContent = code;
     const qr = document.getElementById('poster-qr');
+    const hint = document.getElementById('poster-qr-url-hint');
+    const targetUrl = buildPosterQrTargetUrl(code);
+    if (hint) {
+        hint.textContent = POSTER_QR_LANDING_ORIGIN.replace(/^https?:\/\//, '');
+    }
     if (qr) {
-        const enc = encodeURIComponent('TradeMind-' + code);
-        qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' + enc;
+        const enc = encodeURIComponent(targetUrl);
+        qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + enc;
     }
 }
 
