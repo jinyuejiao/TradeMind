@@ -623,6 +623,17 @@ function defaultReferralInvitesSeed() {
     ];
 }
 
+function defaultReferralPayee() {
+    return {
+        accountType: '',
+        accountName: '',
+        accountNo: '',
+        bankName: '',
+        bankBranch: '',
+        updatedAt: ''
+    };
+}
+
 function defaultMembershipAccount() {
     return {
         subscribed: false,
@@ -631,7 +642,8 @@ function defaultMembershipAccount() {
         trialEndDate: '',
         referralCode: 'GIGA-JIN-8821',
         subUsers: [],
-        referralInvites: defaultReferralInvitesSeed()
+        referralInvites: defaultReferralInvitesSeed(),
+        referralPayee: defaultReferralPayee()
     };
 }
 
@@ -650,7 +662,8 @@ function loadMembershipAccount() {
             ...base,
             ...o,
             subUsers: Array.isArray(o.subUsers) ? o.subUsers : [],
-            referralInvites: Array.isArray(o.referralInvites) ? o.referralInvites : defaultReferralInvitesSeed()
+            referralInvites: Array.isArray(o.referralInvites) ? o.referralInvites : defaultReferralInvitesSeed(),
+            referralPayee: { ...defaultReferralPayee(), ...(o.referralPayee && typeof o.referralPayee === 'object' ? o.referralPayee : {}) }
         };
         merged.subUsers = merged.subUsers.map(u => ({
             id: u.id,
@@ -721,6 +734,244 @@ function referralStatusLabel(status) {
     if (status === 'subscribed') return { text: '已付费', cls: 'text-teal-600 font-bold' };
     return { text: '未订阅', cls: 'text-slate-400' };
 }
+
+const MEMBER_PAYEE_TYPE_LABELS = { wechat: '微信', alipay: '支付宝', bank: '银行卡' };
+let _memberActiveTab = 'subscribe';
+let _memberPayeeEditing = false;
+
+function maskReferralDisplayName(name) {
+    const s = String(name || '').trim();
+    if (!s) return '—';
+    if (s.length === 1) return s + '*';
+    if (s.length === 2) return s[0] + '*';
+    if (s.length <= 4) return s[0] + '**' + s.slice(-1);
+    return s.slice(0, 2) + '***' + s.slice(-2);
+}
+
+function isValidReferralInvite(invite) {
+    return !!(invite && invite.status === 'qualified');
+}
+
+function maskPayeeAccountNo(no) {
+    const s = String(no || '').trim();
+    if (s.length <= 4) return s ? '****' : '—';
+    return s.slice(0, 2) + '****' + s.slice(-2);
+}
+
+function renderReferralValidBadge(isValid) {
+    if (isValid) {
+        return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-100"><i class="ph ph-check-circle"></i>是</span>';
+    }
+    return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200">否</span>';
+}
+
+function renderMemberReferralList() {
+    const tbody = document.getElementById('member-referral-list-tbody');
+    const cards = document.getElementById('member-referral-list-cards');
+    const empty = document.getElementById('member-referral-list-empty');
+    const invites = (window.membershipAccount && window.membershipAccount.referralInvites) || [];
+
+    if (empty) empty.classList.toggle('hidden', invites.length > 0);
+    if (!invites.length) {
+        if (tbody) tbody.innerHTML = '';
+        if (cards) cards.innerHTML = '';
+        return;
+    }
+
+    if (tbody) {
+        tbody.innerHTML = invites.map(r => {
+            const valid = isValidReferralInvite(r);
+            const subHint = r.status === 'subscribed' ? '<div class="text-[9px] text-slate-400 mt-0.5">已付费，待计入有效</div>' : '';
+            return `<tr class="hover:bg-slate-50/80">
+                <td class="px-6 py-3 font-bold text-slate-800">${escapeMemberHtml(maskReferralDisplayName(r.displayName))}</td>
+                <td class="px-4 py-3 text-slate-500">${escapeMemberHtml(formatMembershipExpiryDisplay(r.invitedAt))}</td>
+                <td class="px-6 py-3 text-right">${renderReferralValidBadge(valid)}${subHint}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    if (cards) {
+        cards.innerHTML = invites.map(r => {
+            const valid = isValidReferralInvite(r);
+            const st = referralStatusLabel(r.status);
+            return `<div class="p-4 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="font-black text-slate-800">${escapeMemberHtml(maskReferralDisplayName(r.displayName))}</p>
+                    ${renderReferralValidBadge(valid)}
+                </div>
+                <p class="text-[10px] text-slate-500">注册 ${escapeMemberHtml(formatMembershipExpiryDisplay(r.invitedAt))}</p>
+                <p class="text-[10px]"><span class="${st.cls}">${escapeMemberHtml(st.text)}</span></p>
+            </div>`;
+        }).join('');
+    }
+}
+
+function memberPayeeHasSavedData(payee) {
+    return !!(payee && payee.accountType && payee.accountName && payee.accountNo);
+}
+
+function memberPayeeSyncTypeButtons(type) {
+    document.querySelectorAll('.member-payee-type-btn').forEach(btn => {
+        const t = btn.getAttribute('data-payee-type');
+        const active = t === type;
+        btn.classList.toggle('border-[#14B8A6]', active);
+        btn.classList.toggle('bg-teal-50', active);
+        btn.classList.toggle('text-[#14B8A6]', active);
+        btn.classList.toggle('border-slate-200', !active);
+        btn.classList.toggle('text-slate-600', !active);
+    });
+}
+
+function memberPayeeApplyTypeFields(type) {
+    const bankFields = document.getElementById('member-payee-bank-fields');
+    const accountLabel = document.getElementById('member-payee-account-label');
+    const accountInput = document.getElementById('member-payee-account');
+    if (bankFields) bankFields.classList.toggle('hidden', type !== 'bank');
+    if (accountLabel) {
+        if (type === 'wechat') accountLabel.textContent = '微信号';
+        else if (type === 'alipay') accountLabel.textContent = '支付宝账号';
+        else if (type === 'bank') accountLabel.textContent = '银行卡号';
+        else accountLabel.textContent = '收款账号';
+    }
+    if (accountInput) {
+        if (type === 'bank') accountInput.placeholder = '请输入银行卡号';
+        else if (type === 'wechat') accountInput.placeholder = '请输入微信号';
+        else if (type === 'alipay') accountInput.placeholder = '请输入支付宝账号';
+        else accountInput.placeholder = '请输入账号';
+    }
+}
+
+window.memberPayeeSelectType = function(type) {
+    memberPayeeSyncTypeButtons(type);
+    memberPayeeApplyTypeFields(type);
+    const m = window.membershipAccount;
+    if (m.referralPayee) m.referralPayee.accountType = type;
+};
+
+function memberPayeeFillFormFromData(payee) {
+    const p = payee || defaultReferralPayee();
+    const type = p.accountType || '';
+    memberPayeeSelectType(type);
+    const nameEl = document.getElementById('member-payee-name');
+    const accEl = document.getElementById('member-payee-account');
+    const bankEl = document.getElementById('member-payee-bank-name');
+    const branchEl = document.getElementById('member-payee-bank-branch');
+    if (nameEl) nameEl.value = p.accountName || '';
+    if (accEl) accEl.value = p.accountNo || '';
+    if (bankEl) bankEl.value = p.bankName || '';
+    if (branchEl) branchEl.value = p.bankBranch || '';
+}
+
+function renderMemberPayeeSection() {
+    const payee = (window.membershipAccount && window.membershipAccount.referralPayee) || defaultReferralPayee();
+    const saved = document.getElementById('member-payee-saved');
+    const formWrap = document.getElementById('member-payee-form-wrap');
+    const cancelBtn = document.getElementById('member-payee-cancel-btn');
+    const hasSaved = memberPayeeHasSavedData(payee);
+
+    if (hasSaved && !_memberPayeeEditing) {
+        if (saved) saved.classList.remove('hidden');
+        if (formWrap) formWrap.classList.add('hidden');
+        const typeEl = document.getElementById('member-payee-saved-type');
+        const nameEl = document.getElementById('member-payee-saved-name');
+        const noEl = document.getElementById('member-payee-saved-no');
+        const bankRow = document.getElementById('member-payee-saved-bank-row');
+        const bankEl = document.getElementById('member-payee-saved-bank');
+        const atEl = document.getElementById('member-payee-saved-at');
+        if (typeEl) typeEl.textContent = MEMBER_PAYEE_TYPE_LABELS[payee.accountType] || payee.accountType;
+        if (nameEl) nameEl.textContent = payee.accountName;
+        if (noEl) noEl.textContent = maskPayeeAccountNo(payee.accountNo);
+        if (bankRow) bankRow.classList.toggle('hidden', payee.accountType !== 'bank');
+        if (bankEl) bankEl.textContent = payee.accountType === 'bank' ? (payee.bankName + ' · ' + payee.bankBranch) : '';
+        if (atEl) atEl.textContent = payee.updatedAt ? formatMembershipExpiryDisplay(String(payee.updatedAt).slice(0, 10)) : '—';
+    } else {
+        if (saved) saved.classList.add('hidden');
+        if (formWrap) formWrap.classList.remove('hidden');
+        if (cancelBtn) cancelBtn.classList.toggle('hidden', !hasSaved);
+        memberPayeeFillFormFromData(payee);
+    }
+}
+
+function renderMemberReferralPanel() {
+    const m = window.membershipAccount;
+    const invites = (m && m.referralInvites) || [];
+    const code = (m && m.referralCode) || '—';
+    const qEl = document.getElementById('member-ref-stat-qualified');
+    const tEl = document.getElementById('member-ref-stat-total');
+    const codeEl = document.getElementById('member-referral-tab-code');
+    const qHdr = document.getElementById('referral-modal-qualified');
+    const qualified = countQualifiedReferrals(invites);
+    if (qEl) qEl.textContent = String(qualified);
+    if (qHdr) qHdr.textContent = String(qualified);
+    if (tEl) tEl.textContent = String(invites.length);
+    if (codeEl) codeEl.textContent = code;
+    renderMemberReferralList();
+    renderMemberPayeeSection();
+}
+
+window.memberPayeeEnterEdit = function() {
+    _memberPayeeEditing = true;
+    renderMemberPayeeSection();
+};
+
+window.memberPayeeCancelEdit = function() {
+    _memberPayeeEditing = false;
+    renderMemberPayeeSection();
+};
+
+window.memberPayeeSave = function() {
+    const m = window.membershipAccount;
+    if (!m.referralPayee) m.referralPayee = defaultReferralPayee();
+    const typeBtn = document.querySelector('.member-payee-type-btn.border-\\[\\#14B8A6\\]');
+    let type = (m.referralPayee.accountType || '').trim();
+    if (!type) {
+        document.querySelectorAll('.member-payee-type-btn').forEach(btn => {
+            if (btn.classList.contains('border-[#14B8A6]')) type = btn.getAttribute('data-payee-type') || '';
+        });
+    }
+    const name = (document.getElementById('member-payee-name') && document.getElementById('member-payee-name').value || '').trim();
+    const accountNo = (document.getElementById('member-payee-account') && document.getElementById('member-payee-account').value || '').trim();
+    const bankName = (document.getElementById('member-payee-bank-name') && document.getElementById('member-payee-bank-name').value || '').trim();
+    const bankBranch = (document.getElementById('member-payee-bank-branch') && document.getElementById('member-payee-bank-branch').value || '').trim();
+    const hint = document.getElementById('member-payee-form-hint');
+
+    if (!type) {
+        if (typeof showToast === 'function') showToast('请选择账户类型');
+        else alert('请选择账户类型');
+        return;
+    }
+    if (!name) {
+        if (typeof showToast === 'function') showToast('请填写收款户名');
+        return;
+    }
+    if (!accountNo) {
+        if (typeof showToast === 'function') showToast('请填写收款账号');
+        return;
+    }
+    if (type === 'bank' && (!bankName || !bankBranch)) {
+        if (typeof showToast === 'function') showToast('请填写开户银行与支行');
+        return;
+    }
+
+    m.referralPayee = {
+        accountType: type,
+        accountName: name,
+        accountNo: accountNo,
+        bankName: type === 'bank' ? bankName : '',
+        bankBranch: type === 'bank' ? bankBranch : '',
+        updatedAt: new Date().toISOString()
+    };
+    window.saveMembershipAccount();
+    _memberPayeeEditing = false;
+    if (hint) {
+        hint.textContent = '保存成功';
+        hint.classList.remove('hidden');
+        hint.classList.add('text-emerald-600', 'font-bold');
+        setTimeout(function() { hint.classList.add('hidden'); }, 2500);
+    }
+    renderMemberPayeeSection();
+    if (typeof showToast === 'function') showToast('收款信息已保存');
+};
 
 function buildSubUserRoleOptionsHtml(selected) {
     return MEMBER_SUBUSER_ROLES.map(r =>
@@ -1061,35 +1312,15 @@ window.memberSaveSubUserEdit = function() {
 };
 
 window.openReferralListModal = function() {
-    const modal = document.getElementById('referral-list-modal');
-    const tbody = document.getElementById('referral-list-tbody');
-    const empty = document.getElementById('referral-list-empty');
-    const qEl = document.getElementById('referral-modal-qualified');
-    const m = window.membershipAccount;
-    const invites = (m && m.referralInvites) || [];
-    if (qEl) qEl.textContent = String(countQualifiedReferrals(invites));
-    if (tbody) {
-        if (!invites.length) {
-            tbody.innerHTML = '';
-            if (empty) empty.classList.remove('hidden');
-        } else {
-            if (empty) empty.classList.add('hidden');
-            tbody.innerHTML = invites.map(r => {
-                const st = referralStatusLabel(r.status);
-                const paid = r.firstPaidAt ? formatMembershipExpiryDisplay(r.firstPaidAt) : '—';
-                return `<tr>
-                    <td class="py-2 pr-2 font-bold text-slate-800">${escapeMemberHtml(r.displayName)}</td>
-                    <td class="py-2 px-1 text-slate-500">${formatMembershipExpiryDisplay(r.invitedAt)}</td>
-                    <td class="py-2 pl-1 text-right"><span class="${st.cls}">${escapeMemberHtml(st.text)}</span><div class="text-[9px] text-slate-400 mt-0.5">首订 ${paid}</div></td>
-                </tr>`;
-            }).join('');
-        }
-    }
+    window.membershipAccount = loadMembershipAccount();
+    _memberPayeeEditing = false;
+    renderMemberReferralPanel();
+    const modal = document.getElementById('referral-rewards-modal');
     if (modal) modal.classList.remove('hidden');
 };
 
 window.closeReferralListModal = function() {
-    const modal = document.getElementById('referral-list-modal');
+    const modal = document.getElementById('referral-rewards-modal');
     if (modal) modal.classList.add('hidden');
 };
 
@@ -1172,6 +1403,7 @@ function initMemberPricing() {
 // 会员弹窗控制
 function openMemberModal() {
     window.membershipAccount = loadMembershipAccount();
+    _memberPayeeEditing = false;
     initMemberPricing();
     renderMemberModalPanels();
     document.getElementById('member-modal').classList.remove('hidden');

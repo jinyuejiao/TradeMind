@@ -177,6 +177,29 @@ body {
     word-break: break-word;
 }
 
+/* 会员中心 — 页签切换 */
+.member-tab-btn {
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid transparent;
+}
+.member-tab-btn:hover {
+    color: #0f766e;
+    background: #f0fdfa;
+}
+.member-tab-btn--active {
+    color: #fff;
+    background: linear-gradient(135deg, #14B8A6 0%, #0d9488 100%);
+    border-color: rgba(20, 184, 166, 0.35);
+    box-shadow: 0 4px 14px rgba(20, 184, 166, 0.35);
+}
+.member-payee-type-btn.member-payee-type-btn--active,
+.member-payee-type-btn.border-\[\#14B8A6\] {
+    border-color: #14B8A6 !important;
+    background: #f0fdfa;
+    color: #0d9488;
+}
+
 /* 推荐海报 - 品牌青蓝色系 (与软件图标保持一致) */
 .poster-card {
     background: linear-gradient(165deg, #0D9488 0%, #14B8A6 100%);
@@ -481,6 +504,20 @@ body {
     #member-modal .member-referral-actions > button {
         width: 100%;
         min-height: 44px;
+    }
+
+    #referral-rewards-modal section {
+        border-radius: 1.25rem;
+    }
+
+    #referral-rewards-modal .member-referral-hero {
+        border-radius: 1.25rem;
+        padding: 1rem;
+    }
+
+    #referral-rewards-modal .member-payee-type-btn {
+        font-size: 10px;
+        padding: 0.5rem 0.25rem;
     }
 }
 
