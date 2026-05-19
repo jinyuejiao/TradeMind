@@ -53,6 +53,32 @@
         } catch (e) { /* ignore */ }
     }
 
+    /** 演示：登录名匹配子账号时记录角色，供导览按模块过滤 */
+    function tmResolveSubUserSession(username) {
+        try {
+            sessionStorage.removeItem('tm_auth_subuser_role');
+            sessionStorage.removeItem('tm_auth_subuser_id');
+            if (!username) return;
+            var raw = localStorage.getItem('tm_membership_account_v1');
+            if (!raw) return;
+            var m = JSON.parse(raw);
+            var list = m.subUsers || [];
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].name === username) {
+                    sessionStorage.setItem('tm_auth_subuser_role', list[i].role || '运营');
+                    sessionStorage.setItem('tm_auth_subuser_id', String(list[i].id || ''));
+                    if (window.TM_UI && typeof window.TM_UI.setRole === 'function') {
+                        window.TM_UI.setRole('USER');
+                    }
+                    return;
+                }
+            }
+            if (window.TM_UI && typeof window.TM_UI.setRole === 'function') {
+                window.TM_UI.setRole('ADMIN');
+            }
+        } catch (e) { /* ignore */ }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         var body = document.body;
         if (body.classList.contains('auth-page-login')) {
@@ -73,26 +99,26 @@
                         hint.textContent = line;
                     }
                 }
-                var sub = $('login-subtitle');
-                if (sub) {
-                    sub.textContent = '商贸智脑 · ' + (MERCHANT_LABELS[code] || code) + ' 登录';
-                }
+                /* 品牌副标题保持 TradeMind 头图结构，通道信息见上方 banner */
             } else {
                 window.tmApplyAuthMerchantSkin('WHOLESALE');
             }
         }
         if (body.classList.contains('auth-page-register')) {
-            var sel = $('reg-merchant-type');
-            if (sel) {
-                var stored = tmGetStoredTenantMerchantType();
-                var allowed = { WHOLESALE: 1, FOREIGN: 1, ECOM: 1, FACTORY: 1 };
-                if (stored && allowed[stored]) {
-                    sel.value = stored;
-                }
-                sel.addEventListener('change', function () {
-                    window.tmApplyAuthMerchantSkin(sel.value || 'WHOLESALE');
-                });
-                window.tmApplyAuthMerchantSkin(sel.value || 'WHOLESALE');
+            var stored = tmGetStoredTenantMerchantType() || 'WHOLESALE';
+            window.tmApplyAuthMerchantSkin(stored);
+            var banner = $('register-merchant-banner');
+            if (banner && stored) {
+                banner.hidden = false;
+                banner.innerHTML = '<strong>商户类型</strong>：' + (MERCHANT_LABELS[stored] || stored) + ' · 已在门户选择，注册后沿用该通道';
+            }
+            var invite = $('reg-invite');
+            if (invite) {
+                try {
+                    var params = new URLSearchParams(window.location.search);
+                    var ref = params.get('ref');
+                    if (ref) invite.value = ref;
+                } catch (e) { /* ignore */ }
             }
         }
     });
@@ -152,10 +178,12 @@
         ev.preventDefault();
         var u = $('login-username');
         var p = $('login-password');
-        sessionStorage.setItem('tm_auth_username', u.value.trim());
+        var loginName = u.value.trim();
+        sessionStorage.setItem('tm_auth_username', loginName);
+        tmResolveSubUserSession(loginName);
         try {
             var existing = localStorage.getItem('tm_tenant_merchant_display_name');
-            if (!existing) localStorage.setItem('tm_tenant_merchant_display_name', u.value.trim());
+            if (!existing) localStorage.setItem('tm_tenant_merchant_display_name', loginName);
         } catch (e) { /* ignore */ }
         /* 演示：登录成功不带回服务端商户类型时，沿用本机已登记的租户类型 */
         var persisted = tmGetStoredTenantMerchantType();
@@ -167,28 +195,60 @@
 
     window.tmRegisterSubmit = function (ev) {
         var form = ev.target;
+        ev.preventDefault();
+
+        var regCo = $('reg-company');
+        var regUser = $('reg-username');
+        var pwd = $('reg-password');
+        var pwd2 = $('reg-password2');
+        var phone = $('reg-phone');
+        var sms = $('reg-sms');
+
+        var merchantName = regCo && regCo.value.trim();
+        var loginName = regUser && regUser.value.trim();
+        if (!merchantName) {
+            alert('请填写商户名称');
+            if (regCo) regCo.focus();
+            return;
+        }
+        if (!loginName) {
+            alert('请填写登录名');
+            if (regUser) regUser.focus();
+            return;
+        }
+        if (!pwd || !pwd.value || pwd.value.length < 6) {
+            alert('密码至少 6 位');
+            if (pwd) pwd.focus();
+            return;
+        }
+        if (pwd.value !== pwd2.value) {
+            alert('两次输入的密码不一致');
+            if (pwd2) pwd2.focus();
+            return;
+        }
+        var phoneVal = phone && phone.value.trim();
+        if (!phoneVal || !/^1[3-9]\d{9}$/.test(phoneVal)) {
+            alert('请填写有效的 11 位手机号');
+            if (phone) phone.focus();
+            return;
+        }
+        if (!sms || !sms.value.trim()) {
+            alert('请填写短信验证码');
+            if (sms) sms.focus();
+            return;
+        }
+
         if (form && typeof form.reportValidity === 'function' && !form.reportValidity()) {
             return;
         }
-        ev.preventDefault();
-        var pwd = $('reg-password');
-        var pwd2 = $('reg-password2');
-        if (pwd.value !== pwd2.value) {
-            alert('两次输入的密码不一致');
-            pwd2.focus();
-            return;
-        }
-        var merchant = $('reg-merchant-type');
-        if (merchant && merchant.value) {
-            persistTenantMerchantType(merchant.value);
-        }
-        var regUser = $('reg-username');
-        var regCo = $('reg-company');
-        var displayName = (regCo && regCo.value.trim()) || (regUser && regUser.value.trim()) || '';
+
+        var storedType = tmGetStoredTenantMerchantType();
+        persistTenantMerchantType(storedType || 'WHOLESALE');
+
         try {
-            if (displayName) localStorage.setItem('tm_tenant_merchant_display_name', displayName);
+            localStorage.setItem('tm_tenant_merchant_display_name', merchantName);
         } catch (e) { /* ignore */ }
-        sessionStorage.setItem('tm_auth_username', $('reg-username').value.trim());
+        sessionStorage.setItem('tm_auth_username', loginName);
         alert('注册成功（演示），将跳转登录页');
         window.location.href = './login.html';
     };

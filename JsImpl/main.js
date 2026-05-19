@@ -4,6 +4,9 @@ function loadDashboard() {
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-dashboard').innerHTML = data;
+            if (typeof ensureGlobalPoModal === 'function') {
+                ensureGlobalPoModal('audit-modal');
+            }
         })
         .catch(error => {
             console.error('Error loading dashboard:', error);
@@ -216,12 +219,69 @@ function supplierMgmtPaginationHtml(page, totalPages, total, pageSize, prevFn, n
     );
 }
 
+function tmEscapeHtmlAttr(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+}
+
+function buildSupplierOptionsForNewPo(selectedName) {
+    const names = new Set();
+    (window.supplierDirectory || []).forEach(s => { if (s && s.name) names.add(s.name); });
+    (window.purchaseOrdersCatalog || []).forEach(po => { if (po && po.supplier) names.add(po.supplier); });
+    let html = '<option value="">请选择供应商</option>';
+    Array.from(names).sort((a, b) => a.localeCompare(b, 'zh-CN')).forEach(name => {
+        const sel = name === selectedName ? ' selected' : '';
+        html += `<option value="${tmEscapeHtmlAttr(name)}"${sel}>${name.replace(/</g, '&lt;')}</option>`;
+    });
+    return html;
+}
+
+function updateSupplierPoStats() {
+    const catalog = window.purchaseOrdersCatalog || [];
+    const now = new Date();
+    const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    let monthTotal = 0;
+    let pending = 0;
+    catalog.forEach(po => {
+        if (po.date && String(po.date).slice(0, 7) === monthKey) monthTotal += Number(po.total) || 0;
+        if (po.status === '待审核' || po.status === '部分入库') pending += 1;
+    });
+    const mt = document.getElementById('sup-stat-month-total');
+    const pc = document.getElementById('sup-stat-pending-count');
+    if (mt) mt.textContent = formatCNYAmount(monthTotal);
+    if (pc) pc.textContent = pending + ' 笔';
+}
+
+function ensureGlobalPoModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+    return modal;
+}
+
+window.bindPurchaseOrderListClicks = function() {
+    const tbody = document.getElementById('purchase-orders-tbody');
+    if (!tbody || tbody.dataset.poClickBound === '1') return;
+    tbody.dataset.poClickBound = '1';
+    tbody.addEventListener('click', function(e) {
+        const tr = e.target.closest('tr[data-po-id]');
+        if (!tr) return;
+        if (e.target.closest('button, a, input, select, label')) return;
+        window.openPurchaseDetail(tr.getAttribute('data-po-id'));
+    });
+};
+
 window.renderPurchaseOrdersTablePaged = function() {
     var tbody = document.getElementById('purchase-orders-tbody');
     var pagEl = document.getElementById('purchase-orders-pagination');
     var catalog = window.purchaseOrdersCatalog || [];
     var pageSize = window.SUPPLIER_PO_PAGE_SIZE || 20;
     if (!tbody) return;
+    window.bindPurchaseOrderListClicks();
+    updateSupplierPoStats();
 
     var page = window.supplierPoListPage || 1;
     var totalPages = Math.max(1, Math.ceil(catalog.length / pageSize));
@@ -241,9 +301,9 @@ window.renderPurchaseOrdersTablePaged = function() {
     tbody.innerHTML = slice.map(function(po) {
         var badge = getPurchaseStatusBadgeClass(po.status);
         var sup = String(po.supplier || '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-        var pidAttr = JSON.stringify(po.id != null ? po.id : '');
+        var pidAttr = tmEscapeHtmlAttr(po.id != null ? po.id : '');
         return (
-            '<tr onclick="openPurchaseDetail(' + pidAttr + ')" class="hover:bg-slate-50/80 transition-all cursor-pointer group">' +
+            '<tr data-po-id="' + pidAttr + '" class="tm-purchase-order-row hover:bg-slate-50/80 transition-all cursor-pointer group">' +
             '<td class="px-3 py-3 md:px-6 md:py-4 tm-po-date font-mono text-slate-400 whitespace-nowrap">' + formatPurchaseDisplayDate(po.date) + '</td>' +
             '<td class="px-3 py-3 md:px-6 md:py-4 tm-po-supplier"><span class="block font-bold text-brand-600 truncate" title="' + sup + '">' + sup + '</span></td>' +
             '<td class="px-3 py-3 md:px-6 md:py-4 text-right font-mono font-bold col-hide-mobile">' + formatCNYAmount(po.total) + '</td>' +
@@ -296,23 +356,23 @@ function poFormRowHtml(productId, qty, unitPrice, unit, batch) {
     const sub = (Number(qty) || 0) * (Number(unitPrice) || 0);
     return `
         <tr class="po-form-line" data-po-line>
-            <td class="px-2 py-2 align-middle">
-                <select class="form-input w-full text-xs po-line-product">${opts}</select>
+            <td class="tm-po-td tm-po-td--product">
+                <select class="form-input text-xs po-line-product tm-po-product-select">${opts}</select>
             </td>
-            <td class="px-2 py-2 align-middle"><input type="number" min="0" step="1" class="form-input w-full text-xs text-center po-line-qty" value="${qty != null ? qty : ''}" /></td>
-            <td class="px-2 py-2 align-middle"><input type="number" min="0" step="0.01" class="form-input w-full text-xs text-center po-line-price" value="${unitPrice != null ? unitPrice : ''}" /></td>
-            <td class="px-2 py-2 align-middle">
-                <select class="form-input w-full text-xs text-center po-line-unit">
+            <td class="tm-po-td tm-po-td--qty"><input type="number" min="0" step="1" class="form-input text-xs text-center po-line-qty tm-po-cell-input" value="${qty != null ? qty : ''}" /></td>
+            <td class="tm-po-td tm-po-td--price"><input type="number" min="0" step="0.01" class="form-input text-xs text-center po-line-price tm-po-cell-input" value="${unitPrice != null ? unitPrice : ''}" /></td>
+            <td class="tm-po-td tm-po-td--unit">
+                <select class="form-input text-xs text-center po-line-unit tm-po-cell-input">
                     <option value="件"${u === '件' ? ' selected' : ''}>件</option>
                     <option value="箱"${u === '箱' ? ' selected' : ''}>箱</option>
                     <option value="kg"${u === 'kg' ? ' selected' : ''}>kg</option>
                     <option value="盒"${u === '盒' ? ' selected' : ''}>盒</option>
                 </select>
             </td>
-            <td class="px-2 py-2 align-middle"><input type="text" class="form-input w-full text-xs text-center po-line-batch" value="${batch != null ? String(batch).replace(/"/g, '&quot;') : ''}" placeholder="—" /></td>
-            <td class="px-2 py-2 align-middle text-right font-mono font-bold text-slate-800 po-line-sub">${formatCNYAmount(sub)}</td>
-            <td class="px-2 py-2 align-middle text-center">
-                <button type="button" class="p-1.5 text-risk-high hover:bg-red-50 rounded-lg transition-colors" onclick="poFormRemoveLine(this)" title="删除"><i class="ph ph-trash text-lg"></i></button>
+            <td class="tm-po-td tm-po-td--batch"><input type="text" class="form-input text-xs text-center po-line-batch tm-po-cell-input" value="${batch != null ? String(batch).replace(/"/g, '&quot;') : ''}" placeholder="—" /></td>
+            <td class="tm-po-td tm-po-td--sub"><span class="po-line-sub tm-po-line-sub">${formatCNYAmount(sub)}</span></td>
+            <td class="tm-po-td tm-po-td--action">
+                <button type="button" class="tm-po-row-delete" onclick="poFormRemoveLine(this)" title="删除" aria-label="删除行"><i class="ph ph-trash"></i></button>
             </td>
         </tr>
     `;
@@ -376,20 +436,44 @@ document.addEventListener('change', function(e) {
     }
 });
 
+window.openNewPurchaseOrderForm = function() {
+    window.openPurchaseOrderFormModal({
+        title: '新增进货单',
+        supplierName: '',
+        lines: [],
+        defaultStatus: '草稿',
+        isNew: true,
+        date: new Date().toISOString().slice(0, 10)
+    });
+};
+
 window.openPurchaseOrderFormModal = function(payload) {
-    const modal = document.getElementById('purchase-order-form-modal');
+    const modal = ensureGlobalPoModal('purchase-order-form-modal');
     if (!modal) return;
     const supplier = payload && payload.supplierName ? payload.supplierName : '';
     const lines = (payload && payload.lines) || [];
-    window.poFormContext = { supplierName: supplier, fromSuggestion: !!(payload && payload.fromSuggestion) };
+    const isNew = !!(payload && payload.isNew);
+    window.poFormContext = {
+        supplierName: supplier,
+        fromSuggestion: !!(payload && payload.fromSuggestion),
+        isNew
+    };
 
     const title = document.getElementById('po-form-title');
-    if (title) title.textContent = payload && payload.title ? payload.title : '编辑进货单';
+    if (title) title.textContent = payload && payload.title ? payload.title : (isNew ? '新增进货单' : '编辑进货单');
 
     const supSel = document.getElementById('po-form-supplier');
     if (supSel) {
-        supSel.innerHTML = `<option value="${supplier.replace(/"/g, '&quot;')}">${supplier}</option>`;
-        supSel.value = supplier;
+        if (isNew) {
+            supSel.disabled = false;
+            supSel.innerHTML = buildSupplierOptionsForNewPo(supplier);
+            supSel.value = supplier;
+        } else {
+            supSel.disabled = true;
+            const esc = tmEscapeHtmlAttr(supplier);
+            supSel.innerHTML = `<option value="${esc}">${supplier.replace(/</g, '&lt;')}</option>`;
+            supSel.value = supplier;
+        }
     }
 
     const st = document.getElementById('po-form-status');
@@ -466,7 +550,12 @@ window.savePurchaseOrderForm = function() {
     const dateStr = document.getElementById('po-form-date')?.value || new Date().toISOString().slice(0, 10);
     const payment = document.getElementById('po-form-payment')?.value || '';
     const tbody = document.getElementById('po-form-lines-tbody');
-    if (!tbody || !supplier) return;
+    if (!tbody) return;
+    if (!supplier) {
+        if (typeof showToast === 'function') showToast('请选择供应商');
+        else alert('请选择供应商');
+        return;
+    }
 
     const list = typeof window.getProductCenterProductList === 'function' ? window.getProductCenterProductList() : [];
     const lines = [];
@@ -525,11 +614,19 @@ function loadSupplier() {
         .then(response => response.text())
         .then(data => {
             document.getElementById('view-supplier').innerHTML = data;
+            ensureGlobalPoModal('purchase-detail-modal');
+            ensureGlobalPoModal('purchase-order-form-modal');
             if (typeof window.refreshPurchaseOrdersTable === 'function') {
                 window.refreshPurchaseOrdersTable();
             }
             if (typeof window.renderSupplierDirectoryTable === 'function') {
                 window.renderSupplierDirectoryTable(true);
+            }
+            if (typeof window.bindPurchaseOrderListClicks === 'function') {
+                window.bindPurchaseOrderListClicks();
+            }
+            if (typeof switchSupplierView === 'function') {
+                switchSupplierView('list');
             }
         })
         .catch(error => {
@@ -1485,6 +1582,9 @@ function stopVoiceRecording() {
     setTimeout(() => {
         closeVoiceModal();
         showToast("语音解析成功，已生成草稿单据");
+        if (window.TmOnboarding && typeof window.TmOnboarding.onVoiceComplete === 'function') {
+            window.TmOnboarding.onVoiceComplete();
+        }
     }, 2000);
 }
 
@@ -1611,50 +1711,130 @@ function closeOrderDetail() {
     activeOrderDetailId = '';
 }
 
-function deletePendingDraft(triggerBtn) {
-    const targetCard = triggerBtn.closest('.group');
-    if (!targetCard) return;
-    targetCard.remove();
-    showToast('草稿单据已删除');
+const AUDIT_DRAFT_LINE_PRESETS = {
+    '4': [{ name: '五常稻花香大米 5kg', qty: 5, price: 0 }],
+    default: [{ name: '金色镂空户外灯 (G-8821)', qty: 500, price: 12.5 }]
+};
+
+function auditFormRowHtml(name, qty, price) {
+    const sub = (Number(qty) || 0) * (Number(price) || 0);
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return (
+        '<tr data-audit-line>' +
+        '<td class="tm-audit-td tm-audit-td--product"><input type="text" class="form-input tm-audit-line-name tm-audit-cell-input" value="' + esc(name) + '" /></td>' +
+        '<td class="tm-audit-td tm-audit-td--qty"><input type="number" min="0" step="1" class="form-input tm-audit-line-qty tm-audit-cell-input text-center" value="' + (qty != null ? qty : '') + '" /></td>' +
+        '<td class="tm-audit-td tm-audit-td--price"><input type="number" min="0" step="0.01" class="form-input tm-audit-line-price tm-audit-cell-input text-center" value="' + (price != null ? price : '') + '" /></td>' +
+        '<td class="tm-audit-td tm-audit-td--sub"><span class="tm-audit-line-sub font-mono font-bold">' + sub.toFixed(2) + '</span></td>' +
+        '<td class="tm-audit-td tm-audit-td--action"><button type="button" class="tm-audit-row-delete" onclick="auditRemoveLine(this)" aria-label="删除行"><i class="ph ph-trash"></i></button></td>' +
+        '</tr>'
+    );
 }
 
-// 弹窗开关
-function toggleAuditModalVisibility(visible) {
-    const auditModals = document.querySelectorAll('[id="audit-modal"]');
-    auditModals.forEach((modal) => {
-        if (visible) {
-            modal.classList.remove('hidden');
-        } else {
-            modal.classList.add('hidden');
-        }
+window.auditRecalcTotal = function() {
+    const tbody = document.getElementById('audit-order-lines-tbody');
+    const out = document.getElementById('audit-order-total');
+    if (!tbody) return;
+    let sum = 0;
+    tbody.querySelectorAll('tr[data-audit-line]').forEach(tr => {
+        const q = parseFloat(tr.querySelector('.tm-audit-line-qty')?.value) || 0;
+        const p = parseFloat(tr.querySelector('.tm-audit-line-price')?.value) || 0;
+        const sub = q * p;
+        sum += sub;
+        const cell = tr.querySelector('.tm-audit-line-sub');
+        if (cell) cell.textContent = sub.toFixed(2);
     });
+    if (out) out.textContent = sum.toFixed(2);
+};
+
+window.auditFormAddLine = function() {
+    const tbody = document.getElementById('audit-order-lines-tbody');
+    if (!tbody) return;
+    tbody.insertAdjacentHTML('beforeend', auditFormRowHtml('', '', ''));
+    window.auditRecalcTotal();
+};
+
+window.auditRemoveLine = function(btn) {
+    const tbody = document.getElementById('audit-order-lines-tbody');
+    const tr = btn.closest('tr');
+    if (tr) tr.remove();
+    if (tbody && !tbody.querySelector('tr[data-audit-line]')) {
+        tbody.insertAdjacentHTML('beforeend', auditFormRowHtml('', '', ''));
+    }
+    window.auditRecalcTotal();
+};
+
+window.confirmAuditOrder = function() {
+    closeAuditModal();
+    if (typeof showToast === 'function') showToast('订单已确认，库存已实时扣减。');
+    else alert('订单已确认，库存已实时扣减。');
+};
+
+window.deletePendingDraft = function(triggerBtn) {
+    const targetCard = triggerBtn.closest('.pending-draft-card') || triggerBtn.closest('.group');
+    if (!targetCard) return;
+    targetCard.remove();
+    if (typeof showToast === 'function') showToast('草稿单据已删除');
+};
+
+function toggleAuditModalVisibility(visible) {
+    const modal = ensureGlobalPoModal('audit-modal');
+    if (!modal) return;
+    if (visible) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
     document.body.style.overflow = visible ? 'hidden' : '';
 }
 
-function openAuditModal(name) {
-    const auditCustomerInput = document.getElementById('audit-customer-name');
-    if (auditCustomerInput && name) {
-        auditCustomerInput.value = name;
+function openAuditModal(name, draftId) {
+    ensureGlobalPoModal('audit-modal');
+    const idLabel = document.getElementById('audit-draft-id-label');
+    if (idLabel) idLabel.textContent = 'ID: ' + (draftId != null && draftId !== '' ? draftId : '—');
+
+    const customerSel = document.getElementById('audit-customer-select');
+    if (customerSel && name) {
+        const hasOpt = Array.from(customerSel.options).some(o => o.value === name);
+        if (!hasOpt) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            customerSel.appendChild(opt);
+        }
+        customerSel.value = name;
     }
 
     const auditDeliveryDate = document.getElementById('audit-delivery-date');
     if (auditDeliveryDate) {
-        auditDeliveryDate.value = '2026-04-25';
+        const d = new Date();
+        d.setDate(d.getDate() + 7);
+        auditDeliveryDate.value = d.toISOString().slice(0, 10);
     }
 
-    const auditReceiptAccount = document.getElementById('audit-receipt-account');
-    if (auditReceiptAccount) {
-        auditReceiptAccount.value = '默认收款账户';
+    const tbody = document.getElementById('audit-order-lines-tbody');
+    if (tbody) {
+        const preset = AUDIT_DRAFT_LINE_PRESETS[draftId] || AUDIT_DRAFT_LINE_PRESETS.default;
+        tbody.innerHTML = preset.map(l => auditFormRowHtml(l.name, l.qty, l.price)).join('');
     }
 
+    if (typeof switchAuditTab === 'function') switchAuditTab('order');
+    window.auditRecalcTotal();
     toggleAuditModalVisibility(true);
 }
+
 function closeAuditModal() {
     toggleAuditModalVisibility(false);
 }
 
 window.openAuditModal = openAuditModal;
 window.closeAuditModal = closeAuditModal;
+
+document.addEventListener('input', function(e) {
+    if (!e.target.closest('#audit-modal')) return;
+    if (e.target.classList.contains('tm-audit-line-qty') || e.target.classList.contains('tm-audit-line-price')) {
+        window.auditRecalcTotal();
+    }
+});
 
 // 高级信息抽屉切换
 function toggleAdvanced(type) {
@@ -3582,9 +3762,9 @@ window.ProductModule = {
         document.body.style.overflow = 'hidden';
         
         const sourceWarehouse = window.TM_MOCK_WAREHOUSES.find(w => w.id === warehouseId);
-        const titleEl = document.getElementById('transfer-modal-title');
-        if (titleEl && sourceWarehouse) {
-            titleEl.innerText = `从 ${sourceWarehouse.name} 调拨`;
+        const nameEl = document.getElementById('source-warehouse-name');
+        if (nameEl && sourceWarehouse) {
+            nameEl.textContent = sourceWarehouse.name;
         }
         
         const targetSelect = document.getElementById('target-warehouse-select');
@@ -3596,13 +3776,8 @@ window.ProductModule = {
                     .join('');
         }
         
-        const diffPriceCheckbox = document.getElementById('diff-price-checkbox');
-        if (diffPriceCheckbox) {
-            diffPriceCheckbox.checked = false;
-        }
-        
         this.renderProductList(warehouseId);
-        this.switchTransferType(false);
+        this.addProductRow();
         this.calculateGrandTotal();
     },
     
@@ -3665,74 +3840,78 @@ window.ProductModule = {
     addProductRow: function() {
         this.rowIdCounter++;
         const rowId = 'row-' + this.rowIdCounter;
-        
+        const list = document.getElementById('transfer-product-list');
+        if (!list) return;
+
         const products = window.TM_MOCK_WAREHOUSE_STOCKS[this.currentSourceWarehouseId] || [];
-        
-        const productOptions = products.map(product => 
+        const productOptions = products.map(product =>
             `<option value="${product.id}">${product.name}</option>`
         ).join('');
-        
-        const newRow = document.createElement('tr');
-        newRow.id = rowId;
-        newRow.className = 'border-b border-slate-100';
-        newRow.innerHTML = `
-            <td class="px-4 py-3">
-                <select onchange="window.ProductModule.handleProductSelect('${rowId}', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded text-sm">
+
+        const row = document.createElement('tr');
+        row.id = rowId;
+        row.className = 'tm-transfer-row';
+        row.innerHTML = `
+            <td class="tm-transfer-td tm-transfer-td--product">
+                <select onchange="window.ProductModule.handleProductSelect('${rowId}', this.value)" class="form-input w-full text-sm product-select">
                     <option value="">请选择产品</option>
                     ${productOptions}
                 </select>
             </td>
-            <td class="px-4 py-3">
-                <input type="number" 
-                       class="price-input w-24 px-2 py-1 border border-slate-200 rounded text-sm"
-                       value="0"
-                       disabled
-                       oninput="window.ProductModule.calculateRowTotal(this)">
+            <td class="tm-transfer-td tm-transfer-td--price">
+                <input type="number" min="0" step="0.01" class="price-input form-input tm-transfer-num-input" value="0" disabled readonly oninput="window.ProductModule.calculateRowTotal(this)">
             </td>
-            <td class="px-4 py-3">
-                <input type="number" 
-                       class="qty-input w-24 px-2 py-1 border border-slate-200 rounded text-sm"
-                       value="1"
-                       oninput="window.ProductModule.calculateRowTotal(this)">
+            <td class="tm-transfer-td tm-transfer-td--qty">
+                <input type="number" min="0" step="1" class="qty-input form-input tm-transfer-num-input" value="0" oninput="window.ProductModule.calculateRowTotal(this)">
             </td>
-            <td class="px-4 py-3 text-right font-mono font-bold text-sm row-total">
-                0.00
+            <td class="tm-transfer-td tm-transfer-td--total">
+                <span class="row-total tm-transfer-row-total">0.00</span>
             </td>
-            <td class="px-4 py-3">
-                <button onclick="window.ProductModule.removeProductRow('${rowId}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg">
-                    <i class="ph-bold ph-trash"></i>
+            <td class="tm-transfer-td tm-transfer-td--action">
+                <button type="button" onclick="window.ProductModule.removeProductRow('${rowId}')" class="tm-transfer-row-delete" aria-label="删除行">
+                    <i class="ph ph-trash"></i>
                 </button>
             </td>
         `;
-        
-        document.getElementById('transfer-product-list').appendChild(newRow);
+
+        list.appendChild(row);
     },
     
     handleProductSelect: function(rowId, productId) {
-        const products = window.TM_MOCK_WAREHOUSE_STOCKS[this.currentSourceWarehouseId] || [];
-        const product = products.find(p => p.id == productId);
-        
-        if (!product) return;
-        
         const row = document.getElementById(rowId);
         if (!row) return;
-        
+
         const priceInput = row.querySelector('.price-input');
         const qtyInput = row.querySelector('.qty-input');
         const totalEl = row.querySelector('.row-total');
-        
+
+        if (!productId) {
+            if (priceInput) {
+                priceInput.value = '0';
+                priceInput.removeAttribute('data-product-id');
+            }
+            if (qtyInput) qtyInput.value = '0';
+            if (totalEl) totalEl.textContent = '0.00';
+            this.calculateGrandTotal();
+            return;
+        }
+
+        const products = window.TM_MOCK_WAREHOUSE_STOCKS[this.currentSourceWarehouseId] || [];
+        const product = products.find(p => String(p.id) === String(productId));
+        if (!product) return;
+
         if (priceInput) {
             priceInput.value = product.price.toFixed(2);
+            priceInput.setAttribute('data-product-id', String(product.id));
         }
-        
         if (qtyInput) {
-            qtyInput.value = 1;
+            qtyInput.value = '1';
+            qtyInput.setAttribute('data-qty', '1');
         }
-        
         if (totalEl) {
-            totalEl.innerText = (product.price * 1).toFixed(2);
+            totalEl.textContent = (product.price * 1).toFixed(2);
         }
-        
+
         this.calculateGrandTotal();
     },
     
@@ -3747,19 +3926,21 @@ window.ProductModule = {
     calculateRowTotal: function(inputElement) {
         const row = inputElement.closest('tr');
         if (!row) return;
-        
+
         const priceInput = row.querySelector('.price-input');
         const qtyInput = row.querySelector('.qty-input');
-        
-        const price = parseFloat(priceInput?.value) || 0;
-        const qty = parseFloat(qtyInput?.value) || 0;
+
+        const price = parseFloat(priceInput && priceInput.value) || 0;
+        const qty = parseFloat(qtyInput && qtyInput.value) || 0;
         const total = price * qty;
-        
+
+        if (qtyInput) qtyInput.setAttribute('data-qty', String(qty));
+
         const totalEl = row.querySelector('.row-total');
         if (totalEl) {
-            totalEl.innerText = total.toFixed(2);
+            totalEl.textContent = total.toFixed(2);
         }
-        
+
         this.calculateGrandTotal();
     },
     
@@ -3770,7 +3951,7 @@ window.ProductModule = {
         let grandTotal = 0;
         const rowTotals = document.querySelectorAll('.row-total');
         rowTotals.forEach(el => {
-            const value = parseFloat(el.innerText.replace('$', '')) || 0;
+            const value = parseFloat(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
             grandTotal += value;
         });
         
@@ -3785,17 +3966,23 @@ window.ProductModule = {
         }
         
         const products = [];
-        const rows = document.querySelectorAll('#transfer-product-list tr');
+        const rows = document.querySelectorAll('#transfer-product-list tr.tm-transfer-row');
         rows.forEach(row => {
+            const selectEl = row.querySelector('.product-select');
             const priceInput = row.querySelector('.price-input');
-            if (priceInput) {
-                products.push({
-                    id: parseInt(priceInput.getAttribute('data-product-id')),
-                    price: parseFloat(priceInput.value) || 0,
-                    qty: parseInt(priceInput.getAttribute('data-qty')) || 0
-                });
-            }
+            const qtyInput = row.querySelector('.qty-input');
+            const productId = selectEl && selectEl.value ? parseInt(selectEl.value, 10) : NaN;
+            if (!productId) return;
+            products.push({
+                id: productId,
+                price: parseFloat(priceInput && priceInput.value) || 0,
+                qty: parseInt(qtyInput && qtyInput.value, 10) || 0
+            });
         });
+        if (!products.length) {
+            alert('请至少添加一条有效的产品调拨记录');
+            return;
+        }
         
         const transferData = {
             sourceWarehouseId: this.currentSourceWarehouseId,
@@ -3888,8 +4075,10 @@ function switchSupplierView(mode) {
         btnList.classList.remove('text-slate-400');
         btnSupplier.classList.add('text-slate-400');
         
-        // 显示统计卡
+        // 显示统计卡与新增按钮
         supStatChips.classList.remove('hidden');
+        const newPoBtn = document.getElementById('btn-new-purchase-order');
+        if (newPoBtn) newPoBtn.classList.remove('hidden');
     } else if (mode === 'supplier') {
         listView.classList.add('hidden');
         supplierView.classList.remove('hidden');
@@ -3900,8 +4089,10 @@ function switchSupplierView(mode) {
         btnSupplier.classList.remove('text-slate-400');
         btnList.classList.add('text-slate-400');
         
-        // 隐藏统计卡
+        // 隐藏统计卡与新增按钮
         supStatChips.classList.add('hidden');
+        const newPoBtn = document.getElementById('btn-new-purchase-order');
+        if (newPoBtn) newPoBtn.classList.add('hidden');
     }
 }
 
@@ -3986,12 +4177,15 @@ function confirmDeleteSupplier(supplierId) {
 }
 
 // --- 进货单详情弹窗 ---
-function openPurchaseDetail(id) {
-    const po = (window.purchaseOrdersCatalog || []).find(p => p.id === id);
+window.openPurchaseDetail = function(id) {
+    const poId = id != null ? String(id) : '';
+    const po = (window.purchaseOrdersCatalog || []).find(p => String(p.id) === poId);
     if (!po) {
         if (typeof showToast === 'function') showToast('未找到该进货单据');
         return;
     }
+    const modal = ensureGlobalPoModal('purchase-detail-modal');
+    if (!modal) return;
     const idEl = document.getElementById('detail-purchase-id');
     if (idEl) idEl.textContent = po.id;
     const srcEl = document.getElementById('detail-purchase-source');
@@ -4004,25 +4198,29 @@ function openPurchaseDetail(id) {
                 : (line.sku ? 'SKU: ' + line.sku : '');
             const sub = line.subtotal != null ? line.subtotal : (Number(line.qty) || 0) * (Number(line.unitPrice) || 0);
             return `
-            <tr>
-                <td class="px-6 py-4 font-bold text-slate-800">${line.productName || ''}${batchOrSku ? `<p class="text-[9px] text-slate-400 font-mono tracking-tighter mt-0.5">${batchOrSku}</p>` : ''}</td>
-                <td class="px-6 py-4 text-center font-mono">${formatCNYAmount(line.unitPrice)} <span class="text-[9px] text-slate-400 italic">(${line.unit || '件'})</span></td>
-                <td class="px-6 py-4 text-center font-mono font-bold text-slate-900">${Number(line.qty).toLocaleString('zh-CN')}</td>
-                <td class="px-6 py-4 text-right font-mono font-black text-slate-900">${formatCNYAmount(sub)}</td>
+            <tr class="tm-po-detail-row">
+                <td class="tm-po-td tm-po-td--product">
+                    <span class="font-bold text-slate-800">${line.productName || ''}</span>
+                    ${batchOrSku ? `<p class="text-[9px] text-slate-400 font-mono tracking-tighter mt-0.5">${batchOrSku}</p>` : ''}
+                </td>
+                <td class="tm-po-td tm-po-td--price font-mono">${formatCNYAmount(line.unitPrice)} <span class="text-[9px] text-slate-400 italic">(${line.unit || '件'})</span></td>
+                <td class="tm-po-td tm-po-td--qty font-mono font-bold text-slate-900">${Number(line.qty).toLocaleString('zh-CN')}</td>
+                <td class="tm-po-td tm-po-td--sub font-mono font-black text-slate-900">${formatCNYAmount(sub)}</td>
             </tr>`;
         }).join('');
         tbody.innerHTML = rows || '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">暂无明细</td></tr>';
     }
     const tot = document.getElementById('detail-purchase-total');
     if (tot) tot.textContent = formatCNYAmount(po.total);
-    document.getElementById('purchase-detail-modal').classList.remove('hidden');
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-}
+};
 
-function closePurchaseDetail() {
-    document.getElementById('purchase-detail-modal').classList.add('hidden');
+window.closePurchaseDetail = function() {
+    const modal = document.getElementById('purchase-detail-modal');
+    if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
-}
+};
 function saveProduct() { alert('产品数据已更新，单位配置已成功同步。'); closeProductDetail(); }
 
 // 其他辅助函数

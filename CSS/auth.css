@@ -94,6 +94,41 @@
     line-height: 1.45;
 }
 
+/* 品牌头：TradeMind + 商贸智脑 + 公司名（与登录/注册参考稿一致） */
+.auth-subtitle--stacked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: 0.5rem;
+}
+
+.auth-subtitle-brand {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.04em;
+}
+
+.auth-subtitle-company {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.auth-card-header .auth-title {
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.auth-card-header .auth-logo {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: var(--tm-radius-xl);
+    margin-bottom: 0.85rem;
+}
+
 .auth-card-body {
     padding: 1.5rem 1.25rem 1.25rem;
 }
@@ -339,8 +374,189 @@ select.auth-select {
     padding-right: 1.25rem;
 }
 
+.auth-body.auth-page-register {
+    justify-content: flex-start;
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+}
+
+@media (min-height: 52rem) {
+    .auth-body.auth-page-register {
+        justify-content: center;
+    }
+}
+
+.auth-main--register {
+    max-width: 26rem;
+}
+
+@media (min-width: 768px) {
+    .auth-main--register {
+        max-width: 27.5rem;
+    }
+}
+
+.auth-register-card {
+    box-shadow: var(--tm-shadow-md), 0 20px 40px -16px rgba(15, 23, 42, 0.14);
+}
+
+.auth-register-body {
+    padding-top: 1.35rem;
+}
+
+.auth-form-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: center;
+    letter-spacing: -0.01em;
+}
+
+.auth-form-desc {
+    margin: 0.35rem 0 1.1rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+    line-height: 1.45;
+}
+
+.auth-merchant-banner--register {
+    margin-bottom: 1.1rem;
+    font-size: 0.6875rem;
+}
+
+.auth-register-form .auth-field {
+    margin-bottom: 0.9rem;
+}
+
+.auth-field-divider {
+    height: 1px;
+    margin: 0.35rem 0 1rem;
+    background: linear-gradient(90deg, transparent, #e2e8f0 12%, #e2e8f0 88%, transparent);
+}
+
+.auth-input-row--phone {
+    flex-wrap: nowrap;
+}
+
+.auth-input-row--phone .auth-btn-sms {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    font-size: 0.6875rem;
+}
+
+@media (max-width: 380px) {
+    .auth-input-row--phone {
+        flex-wrap: wrap;
+    }
+
+    .auth-input-row--phone .auth-btn-sms {
+        width: 100%;
+    }
+}
+
+.auth-register-form .auth-btn-primary {
+    margin-top: 1.15rem;
+}
+
+.auth-footer-dot {
+    color: #cbd5e1;
+    margin: 0 0.25rem;
+}
+
+.auth-field--last {
+    margin-bottom: 0.75rem;
+}
+
+.auth-field--last:last-child {
+    margin-bottom: 0;
+}
+
 .auth-register-body .auth-card-body {
     padding-bottom: 1.5rem;
+}
+
+.auth-card-header--compact {
+    padding: 1.35rem 1.25rem 1.15rem;
+}
+
+.auth-section-title {
+    margin: 0 0 0.65rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.auth-section-title--spaced {
+    margin-top: 1.15rem;
+}
+
+.auth-field--tight {
+    margin-bottom: 0.75rem;
+}
+
+.auth-password-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
+@media (min-width: 640px) {
+    .auth-password-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0 0.75rem;
+    }
+}
+
+.auth-input-wrap--grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.auth-optional-block {
+    margin: 1rem 0 0.25rem;
+    border: 1px dashed #e2e8f0;
+    border-radius: var(--tm-radius-3xl);
+    background: #f8fafc;
+    overflow: hidden;
+}
+
+.auth-optional-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    user-select: none;
+}
+
+.auth-optional-summary::-webkit-details-marker {
+    display: none;
+}
+
+.auth-optional-summary::before {
+    content: '▸ ';
+    color: var(--tm-brand-600);
+}
+
+.auth-optional-block[open] .auth-optional-summary::before {
+    content: '▾ ';
+}
+
+.auth-optional-inner {
+    padding: 0 0.9rem 0.85rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.auth-btn-primary--register {
+    margin-top: 1rem;
+}
+
+.auth-register-form .auth-hint {
+    display: none;
 }
 
 /* 登录页：已登记租户商户类型时的通道提示 */
