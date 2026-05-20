@@ -184,6 +184,62 @@
     }
 }
 
+/* ================= 主应用壳层：顶栏固定 + 内容区留白 ================= */
+@media (max-width: 767px) {
+    :root {
+        --tm-mobile-header-h: 3.5rem;
+        --tm-mobile-nav-h: 4.25rem;
+    }
+
+    body.tm-layout-mobile main {
+        min-height: 0;
+    }
+
+    body.tm-layout-mobile .tm-app-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 35;
+        min-height: var(--tm-mobile-header-h);
+        height: auto;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: 0.125rem;
+        box-shadow: 0 1px 0 rgba(226, 232, 240, 0.9);
+    }
+
+    body.tm-layout-mobile .tm-content-area {
+        padding-top: calc(var(--tm-mobile-header-h) + env(safe-area-inset-top, 0px) + 0.5rem);
+        padding-bottom: calc(var(--tm-mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.tm-layout-mobile .view-section {
+        scroll-margin-top: calc(var(--tm-mobile-header-h) + env(safe-area-inset-top, 0px) + 0.5rem);
+    }
+
+    /* AI 录入区：为底部「功能导览」浮动钮预留空间，避免挡住「开始解析」 */
+    body.tm-layout-mobile #dashboard-ai-extract {
+        margin-bottom: 0.5rem;
+    }
+
+    body.tm-layout-mobile .tm-ai-textarea-wrap {
+        padding-bottom: 0.25rem;
+    }
+
+    body.tm-layout-mobile .tm-onboarding-checklist-fab {
+        bottom: calc(var(--tm-mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 0.5rem);
+    }
+
+    body.tm-layout-mobile .tm-onboarding-checklist-panel {
+        bottom: calc(var(--tm-mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 3.25rem);
+    }
+
+    body.tm-layout-mobile .tm-role-switcher {
+        bottom: calc(var(--tm-mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 3.5rem);
+    }
+}
+
 /* ================= 产品中心移动端适配 ================= */
 
 /* 产品中心筛选器移动端适配 */

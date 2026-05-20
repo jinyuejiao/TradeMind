@@ -404,6 +404,38 @@ body {
     }
 }
 
+/* 顶栏图标按钮（通知 / 会员 / 退出） */
+.tm-header-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.35rem;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.tm-header-icon-btn:active {
+    transform: scale(0.94);
+}
+
+.tm-header-icon-btn--logout {
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.tm-header-icon-btn--logout:hover,
+.tm-header-icon-btn--logout:focus-visible {
+    color: #e11d48;
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
 .tm-role-hidden {
     display: none !important;
 }

@@ -1,3 +1,15 @@
+/** 退出登录：清除会话并返回登录页（演示环境） */
+function tmLogout() {
+    if (!confirm('确定要退出登录吗？')) return;
+    try {
+        sessionStorage.removeItem('tm_auth_username');
+        sessionStorage.removeItem('tm_auth_subuser_role');
+        sessionStorage.removeItem('tm_auth_subuser_id');
+    } catch (e) { /* ignore */ }
+    window.location.href = './login.html';
+}
+window.tmLogout = tmLogout;
+
 // 模块加载函数
 function loadDashboard() {
     fetch('./modules/dashboard/dashboard.html')

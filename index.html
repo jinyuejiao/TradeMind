@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TradeMind 商贸智脑 - 智能经营一体化平台</title>
     <link rel="icon" href="./favicon.ico" sizes="any">
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -16,9 +16,9 @@
         })();
     </script>
 
-    <link rel="stylesheet" href="./CSS/main.css?v=tm-ui-23">
+    <link rel="stylesheet" href="./CSS/main.css?v=tm-ui-24">
     <link rel="stylesheet" href="./CSS/tm-onboarding.css?v=tm-onb-1">
-    <link rel="stylesheet" href="./MobileAdapt/mobile.css?v=tm-ui-6">
+    <link rel="stylesheet" href="./MobileAdapt/mobile.css?v=tm-ui-7">
     <link rel="stylesheet" href="./CSS/phosphor-icons.css?v=tm-phosphor-unpkg-1">
     <link rel="preload" href="./Core/partials/desktop-sidebar.html" as="fetch" crossorigin>
     <link rel="preload" href="./Core/partials/mobile-bottom-nav.html" as="fetch" crossorigin>
@@ -50,7 +50,7 @@
             }
         };
     </script>
-    <script src="./JsImpl/main.js?v=tm-ui-22"></script>
+    <script src="./JsImpl/main.js?v=tm-ui-23"></script>
     <script src="./JsImpl/tm-onboarding.js?v=tm-onb-1"></script>
     <script src="./JsImpl/product-center.js?v=tm-ui-5"></script>
     <script src="./MobileAdapt/TM_Responsive.js?v=tm-ui-2"></script>
@@ -546,27 +546,29 @@
     </div>
 
     <!-- 2. 主工作区 -->
-    <main class="flex-1 flex flex-col min-w-0 relative h-full">
+    <main class="flex-1 flex flex-col min-w-0 relative h-full min-h-0">
         <!-- Header -->
-        <header class="h-14 md:h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 flex-shrink-0">
-            <div class="md:hidden flex items-center justify-between gap-2 flex-1 min-w-0">
-                <div class="flex items-center min-w-0"><div class="w-7 h-7 bg-brand-500 rounded flex items-center justify-center text-white mr-2 shrink-0"><i class="ph ph-brain text-lg"></i></div><span class="font-bold text-slate-800 truncate">商贸智脑</span></div>
-                <a href="./gateway.html" class="text-[10px] font-black text-brand-600 uppercase tracking-tighter whitespace-nowrap shrink-0" title="切换商户类型">切换商户</a>
+        <header id="tm-app-header" class="tm-app-header h-14 md:h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center justify-between px-4 md:px-8 md:sticky md:top-0 z-30 flex-shrink-0">
+            <div class="md:hidden flex items-center gap-2 flex-1 min-w-0">
+                <div class="flex items-center min-w-0 flex-1"><div class="w-7 h-7 bg-brand-500 rounded flex items-center justify-center text-white mr-2 shrink-0"><i class="ph ph-brain text-lg"></i></div><span class="font-bold text-slate-800 truncate">商贸智脑</span></div>
+                <a href="./gateway.html" class="text-[10px] font-black text-brand-600 uppercase tracking-tighter whitespace-nowrap shrink-0 px-1" title="切换商户类型">切换商户</a>
             </div>
             <div class="hidden md:flex items-center w-1/3 text-slate-400 group"><i class="ph ph-magnifying-glass text-lg group-focus-within:text-brand-600 transition"></i><input type="text" placeholder="搜索报表、单据、AI指令..." class="bg-transparent border-none focus:outline-none text-slate-700 w-full ml-3 placeholder-slate-400 text-sm font-medium"></div>
-            <div class="flex items-center space-x-3 md:space-x-5">
+            <div class="flex items-center gap-2 md:space-x-5 md:gap-0 shrink-0">
                 <a href="./gateway.html" class="hidden md:inline-flex items-center text-[10px] font-black text-brand-600 uppercase tracking-tighter hover:underline" title="切换商户类型">切换商户</a>
                 <div class="hidden md:flex items-center px-3 py-1 bg-slate-100 border border-slate-200 rounded-full">
                     <span class="w-2 h-2 bg-brand-500 rounded-full mr-2 tech-pulse"></span>
                     <span class="text-xs font-bold text-slate-600 tracking-wide" id="page-title">工作台</span>
                 </div>
-                <button class="relative text-slate-400 hover:text-brand-600 transition"><i class="ph ph-bell text-xl"></i></button>
-                <button class="md:hidden text-slate-400 hover:text-brand-600 transition" onclick="openMemberModal()"><i class="ph ph-user text-xl"></i></button>
+                <button type="button" class="tm-header-icon-btn relative text-slate-400 hover:text-brand-600 transition" title="通知"><i class="ph ph-bell text-xl"></i></button>
+                <button type="button" class="tm-header-icon-btn md:hidden text-slate-400 hover:text-brand-600 transition" onclick="openMemberModal()" title="会员中心" aria-label="会员中心"><i class="ph ph-user-circle text-xl"></i></button>
+                <button type="button" class="tm-header-icon-btn tm-header-icon-btn--logout md:hidden" onclick="tmLogout()" title="退出登录" aria-label="退出登录"><i class="ph ph-sign-out text-xl"></i></button>
+                <button type="button" class="hidden md:inline-flex tm-header-icon-btn text-slate-400 hover:text-rose-500 transition" onclick="tmLogout()" title="退出登录" aria-label="退出登录"><i class="ph ph-sign-out text-lg"></i></button>
             </div>
         </header>
 
         <!-- 内容区域 -->
-        <div id="content-area" class="flex-1 overflow-y-auto bg-slate-50 no-scrollbar pb-24 md:pb-0">
+        <div id="content-area" class="flex-1 min-h-0 overflow-y-auto bg-slate-50 no-scrollbar tm-content-area pb-24 md:pb-0">
 
             <!-- 运维中心下发的全站公告（HTML，时效由 ops-portal 控制） -->
             <div id="tm-ops-site-banner" class="hidden mx-4 mt-3 md:mx-8 md:mt-4 rounded-[2.5rem] border border-indigo-200/80 bg-white/80 backdrop-blur-md shadow-sm overflow-hidden text-sm text-slate-700">
@@ -607,9 +609,9 @@
                             </button>
                         </div>
                         <div class="p-6 md:w-2/3">
-                            <div class="relative">
-                                <textarea id="orderTextInput" class="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm outline-none resize-none focus:border-brand-500 transition-all" placeholder="在此粘贴聊天记录文本..."></textarea>
-                                <button onclick="handleTextSubmit()" class="btn-brand btn-click-effect absolute bottom-4 right-4 px-6 py-2 rounded-xl text-xs font-bold shadow-lg">开始解析</button>
+                            <div class="relative tm-ai-textarea-wrap">
+                                <textarea id="orderTextInput" class="w-full h-32 bg-slate-50 border border-slate-200 rounded-2xl p-4 pb-14 md:pb-4 text-sm outline-none resize-none focus:border-brand-500 transition-all" placeholder="在此粘贴聊天记录文本..."></textarea>
+                                <button type="button" onclick="handleTextSubmit()" class="btn-brand btn-click-effect absolute bottom-4 right-4 px-6 py-2 rounded-xl text-xs font-bold shadow-lg z-[1]">开始解析</button>
                             </div>
                         </div>
                     </div>
